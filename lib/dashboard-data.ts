@@ -76,6 +76,8 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
   // Aggregate category totals across current analyses
   const categoryTotals: Partial<Record<CategorySlug, number>> = {}
   for (const analysis of currentAnalyses) {
+    // category_breakdown is typed as Partial<Record<CategorySlug, number>>; Object.entries
+    // widens keys to string, cast is safe because API guarantees CategorySlug keys
     for (const [slug, amount] of Object.entries(analysis.category_breakdown) as [CategorySlug, number][]) {
       categoryTotals[slug] = (categoryTotals[slug] ?? 0) + amount
     }
@@ -83,6 +85,7 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
 
   let topCategory: CategorySlug | null = null
   let topCategoryAmount = 0
+  // categoryTotals keys are CategorySlug by construction above; cast is safe
   for (const [slug, amount] of Object.entries(categoryTotals) as [CategorySlug, number][]) {
     if (amount > topCategoryAmount) {
       topCategoryAmount = amount

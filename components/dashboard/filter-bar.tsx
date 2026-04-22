@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, type MouseEvent } from 'react'
 import type { BankSlug } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
 
@@ -36,16 +36,20 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
     onChange({ ...filter, bank: null })
   }, [filter, onChange])
 
-  const handleMonthSelect = useCallback(
-    (month: string): void => {
-      onChange({ ...filter, month })
+  // Use data-month attribute to avoid creating a new closure per pill in the map
+  const handleMonthClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>): void => {
+      const month = e.currentTarget.dataset.month
+      if (month) onChange({ ...filter, month })
     },
     [filter, onChange],
   )
 
-  const handleBankSelect = useCallback(
-    (bank: BankSlug): void => {
-      onChange({ ...filter, bank })
+  // Use data-bank attribute to avoid creating a new closure per pill in the map
+  const handleBankClick = useCallback(
+    (e: MouseEvent<HTMLButtonElement>): void => {
+      const bank = e.currentTarget.dataset.bank as BankSlug | undefined
+      if (bank) onChange({ ...filter, bank })
     },
     [filter, onChange],
   )
@@ -74,7 +78,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
               style={pillStyle(isActive)}
               aria-pressed={isActive}
               data-testid={`month-filter-${month}`}
-              onClick={() => handleMonthSelect(month)}
+              data-month={month}
+              onClick={handleMonthClick}
             >
               {formatMonth(month)}
             </button>
@@ -104,7 +109,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
               style={pillStyle(isActive)}
               aria-pressed={isActive}
               data-testid={`bank-filter-${bank}`}
-              onClick={() => handleBankSelect(bank)}
+              data-bank={bank}
+              onClick={handleBankClick}
             >
               {bank.toUpperCase()}
             </button>

@@ -1,5 +1,3 @@
-'use client'
-
 import type { CategorySlug } from '@/types'
 import type { KpiMetrics } from '@/lib/dashboard-data'
 
@@ -115,7 +113,7 @@ export function KpiCards({ metrics, isLoading }: KpiCardsProps): JSX.Element {
             —
           </p>
         ) : (
-          <p className="text-2xl font-bold" style={{ color: momColour }}>
+          <p className="text-2xl font-bold" style={{ color: momColour }} data-testid="kpi-mom-value">
             {`${momSign}${monthOverMonthChange.toFixed(1)}%`}
           </p>
         )}

@@ -62,22 +62,17 @@ describe('KpiCards', () => {
   it('shows positive change in red (accent-negative) colour when spend increased', () => {
     render(<KpiCards metrics={{ ...baseMetrics, monthOverMonthChange: 20 }} isLoading={false} />)
 
-    const momCard = screen.getByTestId('kpi-mom-change')
-    // Select the value element inside .mt-2 (the value wrapper div)
-    const valueEl = momCard.querySelector('.mt-2 p') as HTMLElement | null
-    expect(valueEl).not.toBeNull()
-    expect(valueEl!.style.color).toBe('var(--accent-negative)')
-    expect(valueEl!.textContent).toContain('+20.0%')
+    const valueEl = screen.getByTestId('kpi-mom-value')
+    expect(valueEl).toHaveStyle({ color: 'var(--accent-negative)' })
+    expect(valueEl).toHaveTextContent('+20.0%')
   })
 
   it('shows negative change in green (accent-positive) colour when spend decreased', () => {
     render(<KpiCards metrics={{ ...baseMetrics, monthOverMonthChange: -15 }} isLoading={false} />)
 
-    const momCard = screen.getByTestId('kpi-mom-change')
-    const valueEl = momCard.querySelector('.mt-2 p') as HTMLElement | null
-    expect(valueEl).not.toBeNull()
-    expect(valueEl!.style.color).toBe('var(--accent-positive)')
-    expect(valueEl!.textContent).toContain('-15.0%')
+    const valueEl = screen.getByTestId('kpi-mom-value')
+    expect(valueEl).toHaveStyle({ color: 'var(--accent-positive)' })
+    expect(valueEl).toHaveTextContent('-15.0%')
   })
 
   it('shows "EMI Loans" for emi_loans category slug', () => {
