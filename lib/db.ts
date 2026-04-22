@@ -46,7 +46,8 @@ export async function dbInsert<T = Record<string, unknown>>(
   row: Record<string, unknown>,
   embedToken: string,
 ): Promise<T> {
-  const res = await dbRequest('POST', table, row, embedToken)
+  const withId = { id: crypto.randomUUID(), ...row }
+  const res = await dbRequest('POST', table, withId, embedToken)
   return res.json() as Promise<T>
 }
 

@@ -1,4 +1,7 @@
+import { validateConfig } from '@/lib/validate-config'
 import { NextResponse } from 'next/server'
-export async function GET() {
+
+export function GET(): NextResponse {
+  validateConfig()
   return NextResponse.json({ ok: true })
 }

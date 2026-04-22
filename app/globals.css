@@ -14,6 +14,7 @@
   --text: #1E293B;
   --muted: #64748B;
   --border: #E2E8F0;
+  --surface-border: rgba(255, 255, 255, 0.9);
 }
 
 html, body {

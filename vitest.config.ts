@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// @vitejs/plugin-react Plugin type conflicts with vitest PluginOption union — safe cast, no runtime effect
 type AnyPlugin = any
 
 export default defineConfig({
