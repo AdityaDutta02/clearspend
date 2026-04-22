@@ -19,37 +19,12 @@ function formatMonth(yyyyMm: string): string {
   return `${MONTH_NAMES[month - 1]} '${shortYear}`
 }
 
-const pillBase: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  padding: '6px 12px',
-  fontSize: '0.875rem',
-  borderRadius: '9999px',
-  fontWeight: 500,
-  cursor: 'pointer',
-  border: '1px solid',
-  whiteSpace: 'nowrap',
-  userSelect: 'none',
-  background: 'none',
-  lineHeight: '1',
-}
+const PILL_CLASS = 'px-3 py-1.5 text-sm rounded-full font-medium cursor-pointer border whitespace-nowrap select-none inline-flex items-center'
 
-function activePillStyle(): React.CSSProperties {
-  return {
-    ...pillBase,
-    background: 'var(--primary)',
-    color: '#ffffff',
-    borderColor: 'var(--primary)',
-  }
-}
-
-function inactivePillStyle(): React.CSSProperties {
-  return {
-    ...pillBase,
-    background: '#ffffff',
-    color: 'var(--muted)',
-    borderColor: 'var(--border)',
-  }
+function pillStyle(active: boolean): Record<string, string> {
+  return active
+    ? { background: 'var(--primary)', color: '#ffffff', borderColor: 'var(--primary)' }
+    : { background: '#ffffff', color: 'var(--muted)', borderColor: 'var(--border)' }
 }
 
 export function FilterBar({ availableMonths, availableBanks, filter, onChange }: FilterBarProps): JSX.Element {
@@ -81,7 +56,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
       <div className="filter-bar-scroll flex gap-2 overflow-x-auto pb-1">
         <button
           type="button"
-          style={filter.month === null ? activePillStyle() : inactivePillStyle()}
+          className={PILL_CLASS}
+          style={pillStyle(filter.month === null)}
           aria-pressed={filter.month === null}
           data-testid="month-all"
           onClick={handleMonthAll}
@@ -94,7 +70,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
             <button
               key={month}
               type="button"
-              style={isActive ? activePillStyle() : inactivePillStyle()}
+              className={PILL_CLASS}
+              style={pillStyle(isActive)}
               aria-pressed={isActive}
               data-testid={`month-filter-${month}`}
               onClick={() => handleMonthSelect(month)}
@@ -109,7 +86,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
       <div className="filter-bar-scroll flex gap-2 overflow-x-auto pb-1">
         <button
           type="button"
-          style={filter.bank === null ? activePillStyle() : inactivePillStyle()}
+          className={PILL_CLASS}
+          style={pillStyle(filter.bank === null)}
           aria-pressed={filter.bank === null}
           data-testid="bank-all"
           onClick={handleBankAll}
@@ -122,7 +100,8 @@ export function FilterBar({ availableMonths, availableBanks, filter, onChange }:
             <button
               key={bank}
               type="button"
-              style={isActive ? activePillStyle() : inactivePillStyle()}
+              className={PILL_CLASS}
+              style={pillStyle(isActive)}
               aria-pressed={isActive}
               data-testid={`bank-filter-${bank}`}
               onClick={() => handleBankSelect(bank)}

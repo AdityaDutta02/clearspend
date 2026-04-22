@@ -70,7 +70,8 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
   }
 
   const totalSpend = currentAnalyses.reduce((sum, a) => sum + a.monthly_total, 0)
-  const avgMonthlySpend = totalSpend / currentAnalyses.length
+  const distinctMonths = new Set(currentAnalyses.map((a) => a.month)).size
+  const avgMonthlySpend = distinctMonths > 0 ? totalSpend / distinctMonths : 0
 
   // Aggregate category totals across current analyses
   const categoryTotals: Partial<Record<CategorySlug, number>> = {}
