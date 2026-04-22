@@ -1,0 +1,10 @@
+providers = ["node"]
+
+[phases.install]
+cmds = []
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "node .next/standalone/server.js"
