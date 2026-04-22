@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-gradient: linear-gradient(135deg, #EFF6FF 0%, #F0FDF4 50%, #FFF7ED 100%);
+  --surface: #FFFFFF;
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
+  --primary: #1E40AF;
+  --primary-light: #3B82F6;
+  --accent-positive: #059669;
+  --accent-negative: #DC2626;
+  --text: #1E293B;
+  --muted: #64748B;
+  --border: #E2E8F0;
+}
+
+html, body {
+  min-height: 100dvh;
+  background: var(--bg-gradient);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  color: var(--text);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
+
+@media (max-width: 640px) {
+  .card { padding: 16px; border-radius: 16px; }
+  .filter-bar-scroll {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .filter-bar-scroll::-webkit-scrollbar { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
+}
