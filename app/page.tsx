@@ -61,6 +61,7 @@ export default function HomePage(): JSX.Element {
         }),
       })
 
+      // API contract: { success?: boolean; error?: string } — validated by server schema
       const body = (await res.json()) as { success?: boolean; error?: string }
 
       if (!res.ok || body.error) {
@@ -73,9 +74,14 @@ export default function HomePage(): JSX.Element {
         return
       }
 
-      await refresh()
+      // Commit success state before the optional refresh
       setPendingUpload(null)
       setPageState('idle')
+      try {
+        await refresh()
+      } catch {
+        // Refresh failure is non-fatal; data will be stale until next load
+      }
     } catch {
       setAnalyseError('Analysis failed. Please try again.')
       setPageState('error')

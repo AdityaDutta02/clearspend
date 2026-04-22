@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import type { DashboardData } from '@/types'
@@ -50,6 +50,10 @@ const makeData = (overrides: Partial<DashboardData> = {}): DashboardData => ({
 const defaultFilter: FilterState = { month: null, bank: null }
 
 describe('DashboardShell', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('renders the ClearSpend header', () => {
     render(
       <DashboardShell
