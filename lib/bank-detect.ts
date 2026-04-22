@@ -1,6 +1,6 @@
 import type { BankSlug, AccountType } from '@/types'
 
-interface DetectionResult {
+export interface DetectionResult {
   bank: BankSlug | null
   month: string | null
   account_type: AccountType
@@ -10,7 +10,7 @@ const BANK_PATTERNS: Array<{ pattern: RegExp; slug: BankSlug }> = [
   { pattern: /hdfc/i, slug: 'hdfc' },
   { pattern: /state bank of india|sbi/i, slug: 'sbi' },
   { pattern: /icici/i, slug: 'icici' },
-  { pattern: /axis bank/i, slug: 'axis' },
+  { pattern: /axis/i, slug: 'axis' },
   { pattern: /kotak/i, slug: 'kotak' },
   { pattern: /yes bank/i, slug: 'yes' },
   { pattern: /punjab national|pnb/i, slug: 'pnb' },
