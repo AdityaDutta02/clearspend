@@ -22,7 +22,8 @@ function formatMonth(yyyyMm: string): string {
 
 function formatYAxisLabel(amount: number): string {
   if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`
+    const l = amount / 100000
+    return `₹${Number.isInteger(l) ? l : l.toFixed(1)}L`
   }
   if (amount >= 1000) {
     return `₹${Math.round(amount / 1000)}K`

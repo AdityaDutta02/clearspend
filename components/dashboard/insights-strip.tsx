@@ -12,7 +12,7 @@ function collectInsights(analyses: Analysis[]): string[] {
   const result: string[] = []
 
   for (const analysis of analyses) {
-    for (const insight of analysis.insights) {
+    for (const insight of analysis.insights ?? []) {
       if (!seen.has(insight) && result.length < MAX_INSIGHTS) {
         seen.add(insight)
         result.push(insight)

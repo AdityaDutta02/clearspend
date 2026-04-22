@@ -14,7 +14,7 @@ function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
   const totals = new Map<string, number>()
 
   for (const analysis of analyses) {
-    for (const merchant of analysis.upi_summary.merchant_breakdown) {
+    for (const merchant of analysis.upi_summary?.merchant_breakdown ?? []) {
       totals.set(merchant.name, (totals.get(merchant.name) ?? 0) + merchant.total)
     }
   }
@@ -27,7 +27,8 @@ function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
 
 function formatInrShort(amount: number): string {
   if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`
+    const l = amount / 100000
+    return `₹${Number.isInteger(l) ? l : l.toFixed(1)}L`
   }
   if (amount >= 1000) {
     return `₹${Math.round(amount / 1000)}K`
