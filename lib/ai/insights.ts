@@ -1,5 +1,6 @@
 import { callModel } from '@/lib/terminal-ai'
 import type { CategorySlug } from '@/types'
+import { extractJsonArray } from './utils'
 
 const SYSTEM_PROMPT = `You are a personal finance advisor for Indian users.
 Given spend data, generate 3-5 short insight strings.
@@ -9,12 +10,6 @@ Rules:
 - Be specific with numbers
 - No fluff, no hedging
 Return JSON array of strings only. No prose.`
-
-function extractJsonArray(text: string): string {
-  const match = text.match(/\[[\s\S]*\]/)
-  if (!match) throw new Error('No JSON array in AI response')
-  return match[0]
-}
 
 export async function generateInsights(
   categoryBreakdown: Partial<Record<CategorySlug, number>>,

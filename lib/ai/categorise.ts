@@ -1,5 +1,6 @@
 import { callModel } from '@/lib/terminal-ai'
 import type { CategorySlug } from '@/types'
+import { extractJsonArray } from './utils'
 
 interface RawTx {
   id: string
@@ -26,12 +27,6 @@ Rules:
 - EMI/loan repayments -> "emi_loans"
 - Electricity/water/broadband -> "utilities"
 Return ONLY valid JSON array, no prose.`
-
-function extractJsonArray(text: string): string {
-  const match = text.match(/\[[\s\S]*\]/)
-  if (!match) throw new Error('No JSON array in AI response')
-  return match[0]
-}
 
 export async function categoriseTransactions(
   transactions: RawTx[],
