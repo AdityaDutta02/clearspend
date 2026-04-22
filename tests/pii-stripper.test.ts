@@ -14,6 +14,14 @@ describe('stripPii', () => {
     expect(stripPii('shop@okicici')).toContain('@icici')
   })
 
+  it('normalises UPI handle okhdfcbank to hdfc', () => {
+    expect(stripPii('vendor@okhdfcbank')).toContain('@hdfc')
+  })
+
+  it('normalises UPI handle okaxis to axis', () => {
+    expect(stripPii('merchant@okaxis')).toContain('@axis')
+  })
+
   it('strips 10-digit phone numbers', () => {
     expect(stripPii('Call 9876543210 for help')).toBe('Call [PHONE] for help')
   })
