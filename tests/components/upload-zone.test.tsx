@@ -38,10 +38,12 @@ const MOCK_PARSED_STATEMENT: ParsedStatement = {
 }
 
 describe('UploadZone', () => {
-  const onParsed = vi.fn()
-  const onError = vi.fn()
+  let onParsed: ReturnType<typeof vi.fn>
+  let onError: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
+    onParsed = vi.fn()
+    onError = vi.fn()
     vi.clearAllMocks()
   })
 
