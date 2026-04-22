@@ -195,7 +195,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
   return (
     <div
       role="button"
-      tabIndex={disabled ? -1 : 0}
+      tabIndex={0}
       aria-label="Upload PDF statement"
       aria-disabled={disabled || isLoading}
       data-testid="upload-zone"
@@ -237,9 +237,13 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
             style={{ color: 'var(--muted)' }}
             data-testid="loading-text"
           >
-            Parsing PDF
-            {pendingFileName ? ` — ${pendingFileName}` : '…'}
+            Parsing PDF…
           </p>
+          {pendingFileName && (
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>
+              {pendingFileName}
+            </p>
+          )}
         </>
       ) : (
         <>

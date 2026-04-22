@@ -13,10 +13,6 @@ vi.mock('@/lib/pdf-parser', () => ({
   },
 }))
 
-vi.mock('@/lib/pii-stripper', () => ({
-  stripPii: vi.fn((text: string) => text),
-}))
-
 async function importPdfParser(): Promise<typeof import('@/lib/pdf-parser')> {
   return import('@/lib/pdf-parser')
 }
@@ -134,5 +130,28 @@ describe('UploadZone', () => {
       month: MOCK_PARSED_STATEMENT.month,
       account_type: MOCK_PARSED_STATEMENT.account_type,
     })
+  })
+
+  it('calls onError with password-protection message on PdfPasswordError', async () => {
+    const { parsePdf, PdfPasswordError } = await importPdfParser()
+    vi.mocked(parsePdf).mockRejectedValue(new PdfPasswordError())
+
+    render(<UploadZone onParsed={onParsed} onError={onError} />)
+
+    const input = screen.getByTestId('upload-input')
+    const pdfFile = createPdfFile('protected.pdf')
+
+    Object.defineProperty(input, 'files', {
+      value: [pdfFile],
+      configurable: true,
+    })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(
+        'This PDF is password protected. Please remove the password and try again.',
+      )
+    })
+    expect(onParsed).not.toHaveBeenCalled()
   })
 })
