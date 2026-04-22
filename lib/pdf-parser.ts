@@ -1,5 +1,6 @@
 'use client'
 
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 import type { ParsedStatement, RawTransaction } from '@/types'
 import { stripPii } from '@/lib/pii-stripper'
 import { detectBankAndMonth } from '@/lib/bank-detect'
@@ -29,14 +30,19 @@ export async function parsePdf(
   const pdfjs = await getPdfJs()
   const arrayBuffer = await file.arrayBuffer()
 
-  let doc
+  let doc: PDFDocumentProxy
   try {
     doc = await pdfjs.getDocument({
       data: new Uint8Array(arrayBuffer),
       password: options.password,
     }).promise
   } catch (err) {
-    if (err instanceof Error && err.name === 'PasswordException') {
+    // pdfjs PasswordException is a plain object, not an Error subclass — check name directly
+    if (
+      err !== null &&
+      typeof err === 'object' &&
+      (err as { name?: string }).name === 'PasswordException'
+    ) {
       throw new PdfPasswordError()
     }
     throw err
