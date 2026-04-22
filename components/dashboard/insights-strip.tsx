@@ -86,7 +86,7 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
                 minWidth: '240px',
                 maxWidth: '320px',
                 flexShrink: 0,
-                background: '#ffffff',
+                background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 borderRadius: '12px',
                 padding: '12px',

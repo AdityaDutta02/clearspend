@@ -17,7 +17,9 @@ const PAD_BOTTOM = 40
 function formatMonth(yyyyMm: string): string {
   const [year, month] = yyyyMm.split('-').map(Number)
   const shortYear = String(year).slice(-2)
-  return `${MONTH_NAMES[month - 1]} '${shortYear}`
+  const idx = month - 1
+  const monthName = idx >= 0 && idx < 12 ? MONTH_NAMES[idx] : '???'
+  return `${monthName} '${shortYear}`
 }
 
 function formatYAxisLabel(amount: number): string {

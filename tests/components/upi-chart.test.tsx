@@ -1,25 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { UpiChart } from '@/components/dashboard/upi-chart'
-import type { Analysis } from '@/types'
-
-function makeAnalysis(overrides: Partial<Analysis> = {}): Analysis {
-  return {
-    id: 'a1',
-    statement_id: 's1',
-    month: '2025-01',
-    category_breakdown: {},
-    top_merchants: [],
-    upi_summary: {
-      total_spent: 0,
-      merchant_breakdown: [],
-    },
-    monthly_total: 0,
-    insights: [],
-    generated_at: '2025-01-31T00:00:00Z',
-    ...overrides,
-  }
-}
+import { makeAnalysis } from '../utils/factories'
 
 const analysisWithMerchants = makeAnalysis({
   upi_summary: {

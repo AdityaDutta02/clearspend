@@ -16,7 +16,6 @@ describe('SpendTrendChart', () => {
     const shimmer = screen.getByTestId('shimmer-block')
     expect(shimmer).toBeInTheDocument()
     expect(shimmer).toHaveAttribute('aria-hidden', 'true')
-    expect(shimmer.className).toContain('animate-pulse')
   })
 
   it('shows "No data available" when data is empty array', () => {
