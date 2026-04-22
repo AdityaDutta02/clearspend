@@ -115,21 +115,18 @@ describe('UploadZone', () => {
       expect(onParsed).toHaveBeenCalledTimes(1)
     })
 
-    const callArg = onParsed.mock.calls[0][0] as {
-      file: File
-      text: string
-      transactions: ParsedStatement['transactions']
-      detection: { bank: string | null; month: string | null; account_type: string }
-    }
-
-    expect(callArg.file).toBe(pdfFile)
-    expect(callArg.text).toBe(MOCK_PARSED_STATEMENT.raw_header)
-    expect(callArg.transactions).toEqual(MOCK_PARSED_STATEMENT.transactions)
-    expect(callArg.detection).toEqual({
-      bank: MOCK_PARSED_STATEMENT.bank,
-      month: MOCK_PARSED_STATEMENT.month,
-      account_type: MOCK_PARSED_STATEMENT.account_type,
-    })
+    expect(onParsed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        file: pdfFile,
+        text: MOCK_PARSED_STATEMENT.raw_header,
+        transactions: MOCK_PARSED_STATEMENT.transactions,
+        detection: {
+          bank: MOCK_PARSED_STATEMENT.bank,
+          month: MOCK_PARSED_STATEMENT.month,
+          account_type: MOCK_PARSED_STATEMENT.account_type,
+        },
+      }),
+    )
   })
 
   it('calls onError with password-protection message on PdfPasswordError', async () => {

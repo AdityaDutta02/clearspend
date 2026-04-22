@@ -15,23 +15,28 @@ const DETECTION_UNKNOWN: DetectionResult = {
   account_type: 'credit',
 }
 
-const DEFAULT_PROPS = {
-  fileName: 'march-statement.pdf',
-  creditCost: 20,
-  onConfirm: vi.fn(),
-  onCancel: vi.fn(),
-  isAnalysing: false,
-}
-
 describe('ConfirmModal', () => {
+  let onConfirm: ReturnType<typeof vi.fn>
+  let onCancel: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
+    onConfirm = vi.fn()
+    onCancel = vi.fn()
     vi.clearAllMocks()
+  })
+
+  const defaultProps = () => ({
+    fileName: 'march-statement.pdf',
+    creditCost: 20,
+    onConfirm,
+    onCancel,
+    isAnalysing: false,
   })
 
   it('renders nothing when isOpen is false', () => {
     const { container } = render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={false}
         detection={DETECTION_HDFC}
       />,
@@ -42,7 +47,7 @@ describe('ConfirmModal', () => {
   it('renders modal with bank name when isOpen is true and detection has bank', () => {
     render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={true}
         detection={DETECTION_HDFC}
       />,
@@ -56,7 +61,7 @@ describe('ConfirmModal', () => {
   it('shows "Unknown Bank" warning when detection.bank is null', () => {
     render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={true}
         detection={DETECTION_UNKNOWN}
       />,
@@ -71,13 +76,11 @@ describe('ConfirmModal', () => {
   })
 
   it('calls onCancel when Cancel button is clicked', () => {
-    const onCancel = vi.fn()
     render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={true}
         detection={DETECTION_HDFC}
-        onCancel={onCancel}
       />,
     )
 
@@ -86,13 +89,11 @@ describe('ConfirmModal', () => {
   })
 
   it('calls onConfirm when Analyse Statement button is clicked', () => {
-    const onConfirm = vi.fn()
     render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={true}
         detection={DETECTION_HDFC}
-        onConfirm={onConfirm}
       />,
     )
 
@@ -103,7 +104,7 @@ describe('ConfirmModal', () => {
   it('shows "Analysing…" text and disables buttons when isAnalysing is true', () => {
     render(
       <ConfirmModal
-        {...DEFAULT_PROPS}
+        {...defaultProps()}
         isOpen={true}
         detection={DETECTION_HDFC}
         isAnalysing={true}
