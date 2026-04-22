@@ -14,7 +14,12 @@ vi.mock('@/components/dashboard/filter-bar', () => ({
 
 vi.mock('@/components/dashboard/kpi-cards', () => ({
   KpiCards: ({ metrics }: { metrics: { totalSpend: number }; isLoading: boolean }) => (
-    <div data-testid="kpi-cards">{metrics.totalSpend}</div>
+    <div data-testid="kpi-cards">
+      <div data-testid="kpi-total-spend">{metrics.totalSpend}</div>
+      <div data-testid="kpi-avg-monthly" />
+      <div data-testid="kpi-top-category" />
+      <div data-testid="kpi-mom-change" />
+    </div>
   ),
 }))
 
@@ -142,8 +147,13 @@ describe('DashboardShell', () => {
       />,
     )
 
-    // KpiCards mock renders totalSpend; all analyses combined = 30000
-    expect(screen.getByTestId('kpi-cards')).toHaveTextContent('30000')
+    // KpiCards mock renders 4 distinct card elements
+    expect(screen.getByTestId('kpi-total-spend')).toBeInTheDocument()
+    expect(screen.getByTestId('kpi-avg-monthly')).toBeInTheDocument()
+    expect(screen.getByTestId('kpi-top-category')).toBeInTheDocument()
+    expect(screen.getByTestId('kpi-mom-change')).toBeInTheDocument()
+    // totalSpend reflects sum of all analyses (10000 + 20000 = 30000)
+    expect(screen.getByTestId('kpi-total-spend')).toHaveTextContent('30000')
   })
 
   it('passes filtered analyses correctly to charts', () => {

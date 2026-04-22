@@ -95,6 +95,11 @@ export default function HomePage(): JSX.Element {
     setUploadError(null)
   }, [])
 
+  const handleDismissAnalyseError = useCallback((): void => {
+    setAnalyseError(null)
+    setPageState('idle')
+  }, [])
+
   const isUploadDisabled = pageState !== 'idle'
 
   // Token not yet available — show connecting spinner
@@ -216,7 +221,7 @@ export default function HomePage(): JSX.Element {
 
         {analyseError !== null && (
           <div
-            className="mt-3 p-3 rounded-lg text-sm"
+            className="mt-3 p-3 rounded-lg text-sm flex items-start justify-between gap-2"
             style={{
               background: 'rgba(239, 68, 68, 0.08)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -225,7 +230,17 @@ export default function HomePage(): JSX.Element {
             role="alert"
             data-testid="analyse-error-alert"
           >
-            {analyseError}
+            <span>{analyseError}</span>
+            <button
+              type="button"
+              onClick={handleDismissAnalyseError}
+              aria-label="Dismiss error"
+              className="shrink-0 font-bold"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}
+              data-testid="dismiss-analyse-error"
+            >
+              ×
+            </button>
           </div>
         )}
       </div>
