@@ -1,6 +1,6 @@
 'use client'
 
-import useSWR from 'swr'
+import useSWR, { type KeyedMutator } from 'swr'
 import type { DashboardData } from '@/types'
 
 async function fetchDashboard(_key: string, token: string): Promise<DashboardData> {
@@ -11,7 +11,14 @@ async function fetchDashboard(_key: string, token: string): Promise<DashboardDat
   return res.json() as Promise<DashboardData>
 }
 
-export function useDashboardData(token: string | null) {
+interface UseDashboardDataResult {
+  data: DashboardData | null
+  error: Error | undefined
+  isLoading: boolean
+  refresh: KeyedMutator<DashboardData>
+}
+
+export function useDashboardData(token: string | null): UseDashboardDataResult {
   const { data, error, isLoading, mutate } = useSWR<DashboardData>(
     token ? ['dashboard', token] : null,
     ([, t]: [string, string]) => fetchDashboard('dashboard', t),
