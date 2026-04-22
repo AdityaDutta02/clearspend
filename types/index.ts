@@ -37,7 +37,7 @@ export interface Analysis {
   id: string
   statement_id: string
   month: string
-  category_breakdown: Record<CategorySlug, number>
+  category_breakdown: Partial<Record<CategorySlug, number>>
   top_merchants: Array<{ name: string; total: number; count: number }>
   upi_summary: {
     total_spent: number

@@ -73,6 +73,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     raw_description: tx.description,
   }))
 
+  // Transaction has typed narrow fields (CategorySlug, 'debit'|'credit') not assignable to Record<string, unknown> directly
   for (const tx of finalTxs) {
     await dbInsert<Transaction>('transactions', tx as unknown as Record<string, unknown>, token)
   }
@@ -106,14 +107,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const monthlyTotal = debits.reduce((s, tx) => s + tx.amount, 0)
 
-  const priorAnalyses = await dbList<Analysis>('analyses', {}, token)
-  const priorMonthTotal = priorAnalyses.length > 0
-    ? priorAnalyses.sort((a, b) => b.month.localeCompare(a.month))[0]?.monthly_total ?? null
-    : null
+  const priorAnalyses = (await dbList<Analysis>('analyses', {}, token))
+    .filter((a) => a.month < month)
+    .sort((a, b) => b.month.localeCompare(a.month))
+  const priorMonthTotal = priorAnalyses[0]?.monthly_total ?? null
 
   // AI Step 3: insights
   const insights = await generateInsights(
-    categoryBreakdown as Record<CategorySlug, number>,
+    categoryBreakdown as Partial<Record<CategorySlug, number>>,
     topMerchants,
     monthlyTotal,
     priorMonthTotal,
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     id: analysisId,
     statement_id: statementId,
     month,
-    category_breakdown: categoryBreakdown as Record<CategorySlug, number>,
+    category_breakdown: categoryBreakdown as Partial<Record<CategorySlug, number>>,
     top_merchants: topMerchants,
     upi_summary: {
       total_spent: upiTxs.reduce((s, tx) => s + tx.amount, 0),
