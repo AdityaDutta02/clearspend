@@ -52,7 +52,10 @@ export default function HomePage(): JSX.Element {
     try {
       const res = await fetch('/api/analyse', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token ?? ''}`,
+        },
         body: JSON.stringify({
           month: pendingUpload.detection.month,
           bank: pendingUpload.detection.bank,
