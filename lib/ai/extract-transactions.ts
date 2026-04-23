@@ -1,7 +1,6 @@
+import { callModel } from '@/lib/terminal-ai'
 import { extractJsonArray } from '@/lib/ai/utils'
 import type { RawTransaction } from '@/types'
-
-const GATEWAY_URL = process.env.TERMINAL_AI_GATEWAY_URL!
 
 interface AiRawTx {
   date: string
@@ -40,43 +39,30 @@ function normaliseToIsoDate(raw: string): string {
   return ''
 }
 
-export async function extractTransactionsFromText(
-  rawText: string,
-  embedToken: string,
-): Promise<RawTransaction[]> {
-  const prompt = `Extract all bank transactions from the following statement text.
+const SYSTEM_PROMPT = `You are a bank statement parser for Indian banks.
+Extract all transactions from the statement text.
 Return ONLY a JSON array of objects with these fields:
 - date: string in YYYY-MM-DD format
 - amount: number (positive, no currency symbol)
 - type: "debit" or "credit"
-- description: string (merchant or description, remove personal info like account numbers)
+- description: string (merchant/description, max 200 chars)
 - upi_ref: string or null
-
-Statement text:
-${rawText}
 
 Return ONLY the JSON array, no explanation.`
 
-  const res = await fetch(`${GATEWAY_URL}/ai/chat`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${embedToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'deepseek/deepseek-v3.2',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0,
-    }),
-  })
+export async function extractTransactionsFromText(
+  rawText: string,
+  embedToken: string,
+): Promise<RawTransaction[]> {
+  const content = await callModel(
+    'deepseek/deepseek-v3.2',
+    [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: rawText.slice(0, 12000) },
+    ],
+    embedToken,
+  )
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown AI error' })) as { error: string }
-    throw new Error(err.error ?? `AI extract error ${res.status}`)
-  }
-
-  const json = await res.json() as { choices?: Array<{ message: { content: string } }> }
-  const content = json.choices?.[0]?.message?.content ?? ''
   const parsed = JSON.parse(extractJsonArray(content)) as AiRawTx[]
 
   return parsed
