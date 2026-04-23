@@ -54,6 +54,7 @@ export interface ParsedStatement {
   account_type: AccountType
   transactions: RawTransaction[]
   raw_header: string
+  raw_text: string        // full PDF text for AI fallback extraction
 }
 
 export interface RawTransaction {

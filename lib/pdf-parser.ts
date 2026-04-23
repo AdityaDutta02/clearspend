@@ -66,6 +66,7 @@ export async function parsePdf(
     account_type,
     transactions,
     raw_header: stripPii(headerText.slice(0, 500)),
+    raw_text: stripPii(fullText.slice(0, 15000)),
   }
 }
 

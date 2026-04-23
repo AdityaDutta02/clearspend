@@ -15,6 +15,7 @@ type PageState = 'idle' | 'confirming' | 'analysing' | 'error'
 interface PendingUpload {
   file: File
   text: string
+  rawText: string
   transactions: RawTransaction[]
   detection: DetectionResult
 }
@@ -30,7 +31,7 @@ export default function HomePage(): JSX.Element {
   const [analyseError, setAnalyseError] = useState<string | null>(null)
 
   const handleParsed = useCallback(
-    (result: { file: File; text: string; transactions: RawTransaction[]; detection: DetectionResult }): void => {
+    (result: { file: File; text: string; rawText: string; transactions: RawTransaction[]; detection: DetectionResult }): void => {
       setUploadError(null)
       setAnalyseError(null)
       setPendingUpload(result)
@@ -57,7 +58,7 @@ export default function HomePage(): JSX.Element {
           token,
           transactions: pendingUpload.transactions,
           detection: pendingUpload.detection,
-          raw_text: pendingUpload.text,
+          raw_text: pendingUpload.rawText,
         }),
       })
 
