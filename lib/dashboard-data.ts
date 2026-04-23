@@ -20,12 +20,18 @@ export interface ChartPoint {
 }
 
 export function getAvailableMonths(data: DashboardData): string[] {
-  const months = Array.from(new Set(data.statements.map((s) => s.month)))
+  const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
+  const months = Array.from(
+    new Set(data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.month)),
+  )
   return months.sort((a, b) => b.localeCompare(a))
 }
 
 export function getAvailableBanks(data: DashboardData): BankSlug[] {
-  const banks = Array.from(new Set(data.statements.map((s) => s.bank)))
+  const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
+  const banks = Array.from(
+    new Set(data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.bank)),
+  )
   return banks.sort()
 }
 

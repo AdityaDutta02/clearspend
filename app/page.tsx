@@ -54,9 +54,10 @@ export default function HomePage(): JSX.Element {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token,
+          month: pendingUpload.detection.month,
+          bank: pendingUpload.detection.bank,
+          account_type: pendingUpload.detection.account_type,
           transactions: pendingUpload.transactions,
-          detection: pendingUpload.detection,
           raw_text: pendingUpload.text,
         }),
       })

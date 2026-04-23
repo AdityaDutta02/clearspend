@@ -1,6 +1,14 @@
 'use client'
 
-import { useRef, useState, useCallback, type DragEvent, type KeyboardEvent, type ChangeEvent } from 'react'
+import {
+  useRef,
+  useState,
+  useCallback,
+  type DragEvent,
+  type KeyboardEvent,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
 import { parsePdf, PdfPasswordError } from '@/lib/pdf-parser'
 import type { RawTransaction, ParsedStatement } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
@@ -16,7 +24,7 @@ export interface UploadZoneProps {
   disabled?: boolean
 }
 
-type UploadState = 'idle' | 'drag-over' | 'loading'
+type UploadState = 'idle' | 'drag-over' | 'loading' | 'password-prompt'
 
 function CloudUploadIcon(): JSX.Element {
   return (
@@ -35,6 +43,26 @@ function CloudUploadIcon(): JSX.Element {
       <polyline points="16 16 12 12 8 16" />
       <line x1="12" y1="12" x2="12" y2="21" />
       <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+    </svg>
+  )
+}
+
+function LockIcon(): JSX.Element {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="40"
+      height="40"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   )
 }
@@ -74,49 +102,73 @@ function isPdfFile(file: File): boolean {
 
 export function UploadZone({ onParsed, onError, disabled = false }: UploadZoneProps): JSX.Element {
   const [state, setState] = useState<UploadState>('idle')
-  const [pendingFileName, setPendingFileName] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const resetToIdle = useCallback((): void => {
+    setState('idle')
+    setPendingFile(null)
+    setPassword('')
+    setPasswordError(false)
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
+  }, [])
+
+  const dispatchParsed = useCallback(
+    (file: File, parsed: ParsedStatement): void => {
+      const detection: DetectionResult = {
+        bank: parsed.bank,
+        month: parsed.month,
+        account_type: parsed.account_type,
+      }
+      onParsed({
+        file,
+        text: parsed.raw_text,
+        transactions: parsed.transactions,
+        detection,
+      })
+    },
+    [onParsed],
+  )
+
   const processFile = useCallback(
-    async (file: File): Promise<void> => {
+    async (file: File, pw?: string): Promise<void> => {
       if (!isPdfFile(file)) {
         onError('Only PDF files are supported. Please select a PDF bank statement.')
         return
       }
 
-      setPendingFileName(file.name)
       setState('loading')
 
       try {
-        const parsed: ParsedStatement = await parsePdf(file)
-
-        const detection: DetectionResult = {
-          bank: parsed.bank,
-          month: parsed.month,
-          account_type: parsed.account_type,
-        }
-
-        onParsed({
-          file,
-          text: parsed.raw_header,
-          transactions: parsed.transactions,
-          detection,
-        })
+        const parsed: ParsedStatement = await parsePdf(file, pw ? { password: pw } : {})
+        resetToIdle()
+        dispatchParsed(file, parsed)
       } catch (err) {
         if (err instanceof PdfPasswordError) {
-          onError('This PDF is password protected. Please remove the password and try again.')
+          setPendingFile(file)
+          setPasswordError(pw !== undefined)
+          setPassword('')
+          setState('password-prompt')
         } else {
+          resetToIdle()
           onError('Could not read this PDF. Please try a different file.')
-        }
-      } finally {
-        setState('idle')
-        setPendingFileName(null)
-        if (inputRef.current) {
-          inputRef.current.value = ''
         }
       }
     },
-    [onParsed, onError],
+    [onError, resetToIdle, dispatchParsed],
+  )
+
+  const handlePasswordSubmit = useCallback(
+    (e: FormEvent<HTMLFormElement>): void => {
+      e.preventDefault()
+      if (!pendingFile || !password.trim()) return
+      void processFile(pendingFile, password)
+    },
+    [pendingFile, password, processFile],
   )
 
   const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>): void => {
@@ -128,7 +180,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
     (e: DragEvent<HTMLDivElement>): void => {
       e.preventDefault()
       e.stopPropagation()
-      if (!disabled && state !== 'loading') {
+      if (!disabled && state !== 'loading' && state !== 'password-prompt') {
         setState('drag-over')
       }
     },
@@ -150,7 +202,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
     (e: DragEvent<HTMLDivElement>): void => {
       e.preventDefault()
       e.stopPropagation()
-      if (disabled || state === 'loading') return
+      if (disabled || state === 'loading' || state === 'password-prompt') return
 
       setState('idle')
       const file = e.dataTransfer.files[0]
@@ -162,7 +214,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
   )
 
   const handleClick = useCallback((): void => {
-    if (disabled || state === 'loading') return
+    if (disabled || state === 'loading' || state === 'password-prompt') return
     inputRef.current?.click()
   }, [disabled, state])
 
@@ -188,19 +240,20 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
 
   const isDragOver = state === 'drag-over'
   const isLoading = state === 'loading'
+  const isPasswordPrompt = state === 'password-prompt'
 
   const borderColor = isDragOver ? 'var(--primary-light)' : 'var(--border)'
   const backgroundColor = isDragOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label="Upload PDF statement"
-      aria-disabled={disabled || isLoading}
+      role={isPasswordPrompt ? undefined : 'button'}
+      tabIndex={isPasswordPrompt ? undefined : 0}
+      aria-label={isPasswordPrompt ? undefined : 'Upload PDF statement'}
+      aria-disabled={isPasswordPrompt ? undefined : disabled || isLoading}
       data-testid="upload-zone"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
+      onClick={isPasswordPrompt ? undefined : handleClick}
+      onKeyDown={isPasswordPrompt ? undefined : handleKeyDown}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -211,7 +264,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
         backgroundColor,
         minHeight: '200px',
         opacity: disabled ? 0.5 : 1,
-        cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
+        cursor: isPasswordPrompt ? 'default' : disabled || isLoading ? 'not-allowed' : 'pointer',
         transition: 'border-color 0.2s ease, background-color 0.2s ease',
       }}
       className="flex flex-col items-center justify-center gap-3 p-8 select-none"
@@ -227,25 +280,99 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
         data-testid="upload-input"
       />
 
-      {isLoading ? (
+      {isLoading && (
         <>
           <div style={{ color: 'var(--primary)' }}>
             <Spinner />
           </div>
-          <p
-            className="text-sm font-medium"
-            style={{ color: 'var(--muted)' }}
-            data-testid="loading-text"
-          >
+          <p className="text-sm font-medium" style={{ color: 'var(--muted)' }} data-testid="loading-text">
             Parsing PDF…
           </p>
-          {pendingFileName && (
+          {pendingFile && (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              {pendingFileName}
+              {pendingFile.name}
             </p>
           )}
         </>
-      ) : (
+      )}
+
+      {isPasswordPrompt && (
+        <>
+          <div style={{ color: 'var(--primary)' }}>
+            <LockIcon />
+          </div>
+          <p className="font-semibold text-base" style={{ color: 'var(--text)' }}>
+            PDF is password protected
+          </p>
+          {passwordError && (
+            <p className="text-xs font-medium" style={{ color: '#dc2626' }} data-testid="password-error">
+              Incorrect password. Try again.
+            </p>
+          )}
+          <form
+            onSubmit={handlePasswordSubmit}
+            className="flex flex-col items-center gap-2 w-full max-w-xs"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value) }}
+              placeholder="Enter PDF password"
+              autoFocus
+              data-testid="password-input"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                border: `1px solid ${passwordError ? '#dc2626' : 'var(--border)'}`,
+                background: 'var(--background)',
+                color: 'var(--text)',
+                fontSize: '14px',
+              }}
+            />
+            <div className="flex gap-2 w-full">
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); resetToIdle() }}
+                data-testid="password-cancel"
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)',
+                  background: 'transparent',
+                  color: 'var(--muted)',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!password.trim()}
+                data-testid="password-submit"
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: password.trim() ? 'var(--primary)' : 'var(--border)',
+                  color: password.trim() ? '#fff' : 'var(--muted)',
+                  fontSize: '14px',
+                  cursor: password.trim() ? 'pointer' : 'not-allowed',
+                  fontWeight: 500,
+                }}
+              >
+                Unlock
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
+      {!isLoading && !isPasswordPrompt && (
         <>
           <div style={{ color: isDragOver ? 'var(--primary-light)' : 'var(--muted)' }}>
             <CloudUploadIcon />
@@ -266,15 +393,6 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
               or click to browse · PDF only
             </p>
           </div>
-          {pendingFileName && (
-            <p
-              className="text-xs mt-1 font-medium"
-              style={{ color: 'var(--primary)' }}
-              data-testid="pending-filename"
-            >
-              {pendingFileName}
-            </p>
-          )}
         </>
       )}
     </div>
