@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbList, dbDelete } from '@/lib/db'
-import type { Statement, Analysis, DashboardData, Transaction } from '@/types'
+import type { Statement, Analysis, Transaction, DashboardData } from '@/types'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
@@ -11,9 +11,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     dbList<Analysis>('analyses', {}, token),
   ])
 
-  // Purge orphan statements (inserted but analysis pipeline failed)
+  // Auto-delete orphan statements (statement with no matching analysis — e.g. from a failed pipeline run)
   const analysedIds = new Set(analyses.map((a) => a.statement_id))
   const orphans = statements.filter((s) => !analysedIds.has(s.id))
+
   if (orphans.length > 0) {
     const transactions = await dbList<Transaction>('transactions', {}, token)
     await Promise.all(

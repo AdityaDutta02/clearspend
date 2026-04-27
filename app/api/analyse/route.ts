@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { dbInsert, dbList, dbDelete } from '@/lib/db'
+import { dbInsert, dbDelete, dbList } from '@/lib/db'
 import { categoriseTransactions } from '@/lib/ai/categorise'
 import { resolveUpiMerchants } from '@/lib/ai/upi-resolve'
 import { generateInsights } from '@/lib/ai/insights'
-import { extractTransactionsWithAI } from '@/lib/ai/extract-transactions'
+import { extractTransactionsFromText } from '@/lib/ai/extract-transactions'
 import type { Statement, Transaction, Analysis, CategorySlug } from '@/types'
 
 const RawTransactionSchema = z.object({
@@ -16,78 +16,78 @@ const RawTransactionSchema = z.object({
 })
 
 const AnalyseRequestSchema = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/).nullable(),
-  bank: z.enum(['hdfc', 'sbi', 'icici', 'axis', 'kotak', 'yes', 'pnb', 'bob', 'canara', 'indusind']).nullable(),
+  month: z.string().regex(/^\d{4}-\d{2}$/).nullable().optional(),
+  bank: z.enum(['hdfc', 'sbi', 'icici', 'axis', 'kotak', 'yes', 'pnb', 'bob', 'canara', 'indusind']).nullable().optional(),
   account_type: z.enum(['credit', 'debit']),
   transactions: z.array(RawTransactionSchema).max(1000),
-  raw_text: z.string().max(20000).optional(),
+  raw_text: z.string().optional(),
 })
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  let body: unknown
-  try {
-    body = await req.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
+  const body: unknown = await req.json()
   const parsed = AnalyseRequestSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: 'INVALID_REQUEST', details: parsed.error.flatten() }, { status: 400 })
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  let { month, bank, account_type, transactions: rawTxs, raw_text } = parsed.data
+  let { month, bank, account_type, transactions: rawTxs } = parsed.data
+  const rawText = parsed.data.raw_text
 
-  // AI fallback: if regex extracted 0 transactions, let the model parse the raw text
-  if (rawTxs.length === 0 && raw_text) {
+  // AI fallback: extract transactions from raw text if regex got none
+  if (rawTxs.length === 0 && rawText) {
     try {
-      rawTxs = await extractTransactionsWithAI(raw_text, token)
+      rawTxs = await extractTransactionsFromText(rawText, token)
     } catch {
-      // AI extraction failed — fall through to NO_TRANSACTIONS error
+      // If AI extraction fails, continue with empty array — route will return error below
     }
   }
 
   if (rawTxs.length === 0) {
-    return NextResponse.json({ error: 'NO_TRANSACTIONS' }, { status: 422 })
+    return NextResponse.json({ error: 'No transactions found in this statement' }, { status: 422 })
   }
 
-  if (!bank || !month) {
-    return NextResponse.json({ error: 'BANK_NOT_DETECTED' }, { status: 422 })
-  }
-
-  // Sanitize all transactions before DB operations
-  rawTxs = rawTxs
-    .filter((tx) => /^\d{4}-\d{2}-\d{2}$/.test(tx.date) && tx.amount > 0)
+  // Server-side sanitization before any DB insert
+  const sanitisedTxs = rawTxs
+    .filter((tx) => /^\d{4}-\d{2}-\d{2}$/.test(tx.date))
     .map((tx) => ({
       ...tx,
       amount: Math.round(tx.amount * 100) / 100,
-      description: tx.description.slice(0, 200),
-      upi_ref: tx.upi_ref != null ? String(tx.upi_ref) : null,
+      upi_ref: tx.upi_ref ?? null,
+      description: (tx.description ?? '').slice(0, 300),
     }))
 
-  if (rawTxs.length === 0) {
-    return NextResponse.json({ error: 'NO_TRANSACTIONS' }, { status: 422 })
+  if (sanitisedTxs.length === 0) {
+    return NextResponse.json({ error: 'No valid transactions after sanitisation' }, { status: 422 })
+  }
+
+  // Derive month and bank from transactions if not provided
+  if (!month) {
+    const firstDate = sanitisedTxs[0].date
+    month = firstDate.slice(0, 7)
+  }
+  if (!bank) {
+    bank = 'hdfc'
   }
 
   const statementId = crypto.randomUUID()
   const insertedTxIds: string[] = []
 
   try {
-    const statement = await dbInsert<Statement>('statements', {
+    await dbInsert<Statement>('statements', {
       id: statementId,
       month, bank, account_type,
-      transaction_count: rawTxs.length,
-      total_debit: rawTxs.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0),
-      total_credit: rawTxs.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0),
+      transaction_count: sanitisedTxs.length,
+      total_debit: sanitisedTxs.filter((t) => t.type === 'debit').reduce((s, t) => s + t.amount, 0),
+      total_credit: sanitisedTxs.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0),
       currency: 'INR',
       uploaded_at: new Date().toISOString(),
     }, token)
 
     // AI Step 1: categorise
-    const withIds = rawTxs.map((tx, i) => ({ ...tx, id: `${statementId}_${i}` }))
+    const withIds = sanitisedTxs.map((tx, i) => ({ ...tx, id: `${statementId}_${i}` }))
     const categorised = await categoriseTransactions(withIds, token)
 
     // AI Step 2: resolve UPI merchants
@@ -112,7 +112,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       raw_description: tx.description,
     }))
 
-    // Transaction has typed narrow fields (CategorySlug, 'debit'|'credit') not assignable to Record<string, unknown> directly
     for (const tx of finalTxs) {
       await dbInsert<Transaction>('transactions', tx as unknown as Record<string, unknown>, token)
       insertedTxIds.push(tx.id)
@@ -135,11 +134,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
 
-    // Aggregate UPI merchant totals
     const upiTxs = debits.filter((tx) => tx.upi_merchant)
     const upiMerchantTotalsMap = new Map<string, { total: number; count: number }>()
     for (const tx of upiTxs) {
-      // upi_merchant is guaranteed non-null by the filter above
       const name = tx.upi_merchant!
       const prev = upiMerchantTotalsMap.get(name) ?? { total: 0, count: 0 }
       upiMerchantTotalsMap.set(name, { total: prev.total + tx.amount, count: prev.count + 1 })
@@ -148,7 +145,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const monthlyTotal = debits.reduce((s, tx) => s + tx.amount, 0)
 
     const priorAnalyses = (await dbList<Analysis>('analyses', {}, token))
-      .filter((a) => a.month < month)
+      .filter((a) => a.month < month!)
       .sort((a, b) => b.month.localeCompare(a.month))
     const priorMonthTotal = priorAnalyses[0]?.monthly_total ?? null
 
@@ -179,16 +176,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       generated_at: new Date().toISOString(),
     }, token)
 
-    return NextResponse.json({ statement, analysis })
+    return NextResponse.json({ success: true, analysis })
   } catch (err) {
-    // Rollback: delete statement and any partially inserted transactions
+    // Rollback: delete any inserted transactions and the statement
     await Promise.all([
       ...insertedTxIds.map((id) => dbDelete('transactions', id, token).catch(() => undefined)),
       dbDelete('statements', statementId, token).catch(() => undefined),
     ])
 
     const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('INSUFFICIENT_CREDITS') || message.includes('insufficient')) {
+    if (message.includes('INSUFFICIENT_CREDITS')) {
       return NextResponse.json({ error: 'INSUFFICIENT_CREDITS' }, { status: 402 })
     }
     return NextResponse.json({ error: 'ANALYSIS_FAILED', details: message }, { status: 500 })

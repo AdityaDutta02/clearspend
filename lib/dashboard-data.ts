@@ -21,17 +21,17 @@ export interface ChartPoint {
 
 export function getAvailableMonths(data: DashboardData): string[] {
   const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
-  const months = Array.from(new Set(
-    data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.month)
-  ))
+  const months = Array.from(
+    new Set(data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.month)),
+  )
   return months.sort((a, b) => b.localeCompare(a))
 }
 
 export function getAvailableBanks(data: DashboardData): BankSlug[] {
   const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
-  const banks = Array.from(new Set(
-    data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.bank)
-  ))
+  const banks = Array.from(
+    new Set(data.statements.filter((s) => analysedIds.has(s.id)).map((s) => s.bank)),
+  )
   return banks.sort()
 }
 

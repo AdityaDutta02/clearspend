@@ -15,7 +15,6 @@ type PageState = 'idle' | 'confirming' | 'analysing' | 'error'
 interface PendingUpload {
   file: File
   text: string
-  rawText: string
   transactions: RawTransaction[]
   detection: DetectionResult
 }
@@ -31,7 +30,7 @@ export default function HomePage(): JSX.Element {
   const [analyseError, setAnalyseError] = useState<string | null>(null)
 
   const handleParsed = useCallback(
-    (result: { file: File; text: string; rawText: string; transactions: RawTransaction[]; detection: DetectionResult }): void => {
+    (result: { file: File; text: string; transactions: RawTransaction[]; detection: DetectionResult }): void => {
       setUploadError(null)
       setAnalyseError(null)
       setPendingUpload(result)
@@ -53,12 +52,16 @@ export default function HomePage(): JSX.Element {
     try {
       const res = await fetch('/api/analyse', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token ?? ''}`,
+        },
         body: JSON.stringify({
-          token,
+          month: pendingUpload.detection.month,
+          bank: pendingUpload.detection.bank,
+          account_type: pendingUpload.detection.account_type,
           transactions: pendingUpload.transactions,
-          detection: pendingUpload.detection,
-          raw_text: pendingUpload.rawText,
+          raw_text: pendingUpload.text,
         }),
       })
 
