@@ -10,5 +10,6 @@
   "category": "chat",
   "tier": "good",
   "credit_cost_per_use": 20,
-  "min_credits": 5
+  "min_credits": 5,
+  "db_migrations": "db-migrations.sql"
 }
