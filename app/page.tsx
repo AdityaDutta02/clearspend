@@ -65,14 +65,14 @@ export default function HomePage(): JSX.Element {
         }),
       })
 
-      // API contract: { success?: boolean; error?: string } — validated by server schema
-      const body = (await res.json()) as { success?: boolean; error?: string }
+      // API contract: { success?: boolean; error?: string; details?: string }
+      const body = (await res.json()) as { success?: boolean; error?: string; details?: string }
 
       if (!res.ok || body.error) {
         if (body.error === 'INSUFFICIENT_CREDITS') {
           setAnalyseError('You need at least 5 credits to analyse a statement.')
         } else {
-          setAnalyseError('Analysis failed. Please try again.')
+          setAnalyseError(`Analysis failed: ${body.details ?? body.error ?? 'unknown error'} (HTTP ${res.status})`)
         }
         setPageState('error')
         return
