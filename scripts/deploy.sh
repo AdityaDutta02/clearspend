@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy script: merges committed main source into deploy branch.
-# Terminal AI rebuilds via Docker (COPY . . && npm run build), so source must be correct.
+# Terminal AI uses Nixpacks (nixpacks.toml) — runs npm ci + npm run build on the deploy branch.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -31,4 +31,4 @@ git push origin deploy
 
 git checkout main
 echo "Deploy branch updated from main@${CURRENT_SHA}."
-echo "Trigger redeploy in Terminal AI dashboard — Docker will rebuild from source."
+echo "Trigger redeploy in Terminal AI dashboard — Nixpacks will run npm ci + npm run build from source."
