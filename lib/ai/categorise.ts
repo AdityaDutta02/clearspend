@@ -36,29 +36,38 @@ export async function categoriseTransactions(
     id, description, amount, type,
   }))
 
-  const content = await callModel(
-    'deepseek/deepseek-v3.2',
-    [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: JSON.stringify(input) },
-    ],
-    token,
-  )
+  try {
+    const content = await callModel(
+      'deepseek/deepseek-v3.2',
+      [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: JSON.stringify(input) },
+      ],
+      token,
+    )
 
-  const parsed = JSON.parse(extractJsonArray(content)) as Array<{
-    id: string
-    merchant: string
-    category: string
-  }>
+    const parsed = JSON.parse(extractJsonArray(content)) as Array<{
+      id: string
+      merchant: string
+      category: string
+    }>
 
-  const lookup = new Map(parsed.map((p) => [p.id, p]))
+    const lookup = new Map(parsed.map((p) => [p.id, p]))
 
-  return transactions.map((tx) => {
-    const categorised = lookup.get(tx.id)
-    return {
+    return transactions.map((tx) => {
+      const categorised = lookup.get(tx.id)
+      return {
+        ...tx,
+        merchant: categorised?.merchant ?? tx.description.slice(0, 40),
+        category: (categorised?.category as CategorySlug) ?? 'others',
+      }
+    })
+  } catch (err) {
+    console.error('[categorise] AI failed, using fallback defaults:', err instanceof Error ? err.message : String(err))
+    return transactions.map((tx) => ({
       ...tx,
-      merchant: categorised?.merchant ?? tx.description.slice(0, 40),
-      category: (categorised?.category as CategorySlug) ?? 'others',
-    }
-  })
+      merchant: tx.description.slice(0, 40),
+      category: 'others' as CategorySlug,
+    }))
+  }
 }
