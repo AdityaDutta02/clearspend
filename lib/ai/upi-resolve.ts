@@ -35,23 +35,28 @@ export async function resolveUpiMerchants(
 
   const input = upiTxs.map(({ id, upi_ref, description }) => ({ id, upi_ref, description }))
 
-  const content = await callModel(
-    'qwen/qwen3-235b-a22b-2507',
-    [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: JSON.stringify(input) },
-    ],
-    token,
-  )
+  try {
+    const content = await callModel(
+      'qwen/qwen3-235b-a22b-2507',
+      [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: JSON.stringify(input) },
+      ],
+      token,
+    )
 
-  const parsed = JSON.parse(extractJsonArray(content)) as Array<{
-    id: string
-    upi_merchant: string
-  }>
-  const lookup = new Map(parsed.map((p) => [p.id, p.upi_merchant]))
+    const parsed = JSON.parse(extractJsonArray(content)) as Array<{
+      id: string
+      upi_merchant: string
+    }>
+    const lookup = new Map(parsed.map((p) => [p.id, p.upi_merchant]))
 
-  return transactions.map((tx) => ({
-    ...tx,
-    upi_merchant: tx.upi_ref ? (lookup.get(tx.id) ?? null) : null,
-  }))
+    return transactions.map((tx) => ({
+      ...tx,
+      upi_merchant: tx.upi_ref ? (lookup.get(tx.id) ?? null) : null,
+    }))
+  } catch (err) {
+    console.error('[upi-resolve] AI failed, skipping UPI resolution:', err instanceof Error ? err.message : String(err))
+    return transactions.map((tx) => ({ ...tx, upi_merchant: null }))
+  }
 }
