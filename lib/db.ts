@@ -7,7 +7,8 @@ async function dbRequest(
   body: unknown,
   embedToken: string,
 ): Promise<Response> {
-  const res = await fetch(`${GATEWAY_URL}/db/${path}`, {
+  const url = `${GATEWAY_URL}/db/${path}`
+  const res = await fetch(url, {
     method,
     headers: {
       Authorization: `Bearer ${embedToken}`,
@@ -16,8 +17,17 @@ async function dbRequest(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Unknown error' })) as { error: string }
-    throw new Error(err.error ?? `DB error ${res.status}`)
+    const rawText = await res.text().catch(() => '<unreadable>')
+    let errMsg: string
+    try {
+      const parsed = JSON.parse(rawText) as { error?: string; message?: string; detail?: string }
+      errMsg = parsed.error ?? parsed.message ?? parsed.detail ?? rawText
+    } catch {
+      errMsg = rawText
+    }
+    const fullMsg = `DB ${method} ${url} → ${res.status}: ${errMsg}`
+    console.error('[db]', fullMsg)
+    throw new Error(fullMsg)
   }
   return res
 }

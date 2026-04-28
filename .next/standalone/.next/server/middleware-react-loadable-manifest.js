@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST='{"lib/pdf-parser.ts -> pdfjs-dist":{"id":971,"files":["static/chunks/9b0008ae.0b18a9b9e6048e71.js","static/chunks/251.ddc7eb651ce2d377.js"]}}';
+self.__REACT_LOADABLE_MANIFEST='{"lib/pdf-parser.ts -> pdfjs-dist":{"id":971,"files":["static/chunks/9b0008ae.f2d722b8cb8184b9.js","static/chunks/251.ddc7eb651ce2d377.js"]}}';
