@@ -32,3 +32,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const data: DashboardData = { statements: cleanStatements, analyses }
   return NextResponse.json(data)
 }
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const [statements, analyses, transactions] = await Promise.all([
+    dbList<Statement>('statements', {}, token),
+    dbList<Analysis>('analyses', {}, token),
+    dbList<Transaction>('transactions', {}, token),
+  ])
+
+  await Promise.all([
+    ...statements.map((s) => dbDelete('statements', s.id, token).catch(() => undefined)),
+    ...analyses.map((a) => dbDelete('analyses', a.id, token).catch(() => undefined)),
+    ...transactions.map((t) => dbDelete('transactions', t.id, token).catch(() => undefined)),
+  ])
+
+  return NextResponse.json({
+    deleted: { statements: statements.length, analyses: analyses.length, transactions: transactions.length },
+  })
+}
