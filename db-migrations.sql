@@ -1,7 +1,8 @@
 -- ClearSpend DB schema
 -- Runs once at deploy time. Do not use schema-qualified names.
 
-CREATE TABLE IF NOT EXISTS statements (
+DROP TABLE IF EXISTS statements;
+CREATE TABLE statements (
   id               TEXT PRIMARY KEY,
   month            TEXT NOT NULL,
   bank             TEXT NOT NULL,
@@ -14,9 +15,6 @@ CREATE TABLE IF NOT EXISTS statements (
   card_name        TEXT,
   last_four        TEXT
 );
-
-ALTER TABLE statements ADD COLUMN IF NOT EXISTS card_name TEXT;
-ALTER TABLE statements ADD COLUMN IF NOT EXISTS last_four TEXT;
 
 CREATE TABLE IF NOT EXISTS transactions (
   id               TEXT PRIMARY KEY,
