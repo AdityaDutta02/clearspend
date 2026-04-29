@@ -112,16 +112,6 @@ export default function HomePage(): JSX.Element {
     setPageState('idle')
   }, [])
 
-  const handleResetData = useCallback(async (): Promise<void> => {
-    if (!token) return
-    if (!window.confirm('Delete ALL statements and analyses? This cannot be undone.')) return
-    await fetch('/api/dashboard', {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    await refresh()
-  }, [token, refresh])
-
   const isUploadDisabled = pageState !== 'idle'
 
   // Token not yet available — show connecting spinner
@@ -274,23 +264,6 @@ export default function HomePage(): JSX.Element {
         isLoading={dataLoading}
       />
 
-      {data.statements.length > 0 && (
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-end">
-          <button
-            type="button"
-            onClick={handleResetData}
-            className="text-xs px-3 py-1.5 rounded"
-            style={{
-              color: 'var(--muted)',
-              border: '1px solid var(--border)',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            Clear all data
-          </button>
-        </div>
-      )}
 
       <ConfirmModal
         isOpen={pageState === 'confirming' || pageState === 'analysing'}
