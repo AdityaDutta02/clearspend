@@ -123,6 +123,8 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
         bank: parsed.bank,
         month: parsed.month,
         account_type: parsed.account_type,
+        card_name: parsed.card_name,
+        last_four: parsed.last_four,
       }
       onParsed({
         file,

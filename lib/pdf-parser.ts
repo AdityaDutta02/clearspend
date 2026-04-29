@@ -57,13 +57,15 @@ export async function parsePdf(
 
   const fullText = pages.join('\n')
   const headerText = pages[0] ?? ''
-  const { bank, month, account_type } = detectBankAndMonth(headerText)
+  const { bank, month, account_type, card_name, last_four } = detectBankAndMonth(headerText, file.name)
   const transactions = extractTransactions(fullText)
 
   return {
     bank,
     month,
     account_type,
+    card_name,
+    last_four,
     transactions,
     raw_header: stripPii(headerText.slice(0, 500)),
     raw_text: stripPii(fullText.slice(0, 15000)),
@@ -96,6 +98,8 @@ function normaliseDate(raw: string): string {
 }
 
 function extractUpiRef(description: string): string | null {
-  const match = description.match(/UPI[\/\-\s]*([A-Z0-9]+)/i)
-  return match ? match[1] : null
+  const vpa = description.match(/([a-zA-Z0-9._\-]+@[a-zA-Z]{2,})/i)
+  if (vpa) return vpa[1]
+  const code = description.match(/UPI[\/\-\s]+([A-Z0-9]{6,})/i)
+  return code ? code[1] : null
 }
