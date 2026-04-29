@@ -18,8 +18,6 @@ export interface Statement {
   total_credit: number
   currency: 'INR'
   uploaded_at: string
-  card_name: string | null
-  last_four: string | null
 }
 
 export interface Transaction {
@@ -44,6 +42,8 @@ export interface Analysis {
   upi_summary: {
     total_spent: number
     merchant_breakdown: Array<{ name: string; total: number; count: number }>
+    card_name?: string | null
+    last_four?: string | null
   }
   monthly_total: number
   insights: string[]

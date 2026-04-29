@@ -36,15 +36,16 @@ export function getAvailableMonths(data: DashboardData): string[] {
 }
 
 export function getAvailableCards(data: DashboardData): CardDescriptor[] {
-  const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
-  return data.statements
-    .filter((s): s is Statement => analysedIds.has(s.id))
-    .map((s) => ({
-      statement_id: s.id,
-      bank: s.bank,
-      card_name: s.card_name,
-      last_four: s.last_four,
-    }))
+  const statementMap = new Map(data.statements.map((s) => [s.id, s]))
+  return data.analyses.map((a) => {
+    const stmt = statementMap.get(a.statement_id)
+    return {
+      statement_id: a.statement_id,
+      bank: stmt?.bank ?? ('hdfc' as BankSlug),
+      card_name: a.upi_summary?.card_name ?? null,
+      last_four: a.upi_summary?.last_four ?? null,
+    }
+  })
 }
 
 export function getAvailableBanks(data: DashboardData): BankSlug[] {

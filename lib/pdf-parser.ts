@@ -57,7 +57,8 @@ export async function parsePdf(
 
   const fullText = pages.join('\n')
   const headerText = pages[0] ?? ''
-  const { bank, month, account_type, card_name, last_four } = detectBankAndMonth(headerText, file.name)
+  // Use up to 5000 chars of full text for bank detection so names buried past page 1 are found
+  const { bank, month, account_type, card_name, last_four } = detectBankAndMonth(fullText.slice(0, 5000), file.name)
   const transactions = extractTransactions(fullText)
 
   return {

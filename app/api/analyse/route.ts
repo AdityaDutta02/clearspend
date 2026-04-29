@@ -102,8 +102,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       total_credit: sanitisedTxs.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0),
       currency: 'INR',
       uploaded_at: new Date().toISOString(),
-      card_name: cardName,
-      last_four: lastFour,
     }, token)
     console.log(`[analyse:${reqId}] DB statement OK`)
 
@@ -201,6 +199,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         merchant_breakdown: [...upiMerchantTotalsMap.entries()]
           .map(([name, { total, count }]) => ({ name, total, count }))
           .sort((a, b) => b.total - a.total),
+        card_name: cardName,
+        last_four: lastFour,
       },
       monthly_total: monthlyTotal,
       insights,

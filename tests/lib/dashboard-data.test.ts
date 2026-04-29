@@ -22,8 +22,6 @@ const makeStatement = (overrides: Partial<Statement>): Statement => ({
   total_credit: 1000,
   currency: 'INR',
   uploaded_at: '2025-01-15T10:00:00Z',
-  card_name: null,
-  last_four: null,
   ...overrides,
 })
 
@@ -106,15 +104,15 @@ describe('getAvailableBanks', () => {
 // ─── getAvailableCards ────────────────────────────────────────────────────────
 
 describe('getAvailableCards', () => {
-  it('returns one entry per analysed statement', () => {
+  it('returns one entry per analysed statement with card info from upi_summary', () => {
     const data = buildData(
       [
-        makeStatement({ id: 'stmt-a', bank: 'hdfc', card_name: 'Regalia', last_four: '1234' }),
-        makeStatement({ id: 'stmt-b', bank: 'hdfc', card_name: 'Millennia', last_four: '5678' }),
+        makeStatement({ id: 'stmt-a', bank: 'hdfc' }),
+        makeStatement({ id: 'stmt-b', bank: 'hdfc' }),
       ],
       [
-        makeAnalysis({ id: 'ana-a', statement_id: 'stmt-a' }),
-        makeAnalysis({ id: 'ana-b', statement_id: 'stmt-b' }),
+        makeAnalysis({ id: 'ana-a', statement_id: 'stmt-a', upi_summary: { total_spent: 0, merchant_breakdown: [], card_name: 'Regalia', last_four: '1234' } }),
+        makeAnalysis({ id: 'ana-b', statement_id: 'stmt-b', upi_summary: { total_spent: 0, merchant_breakdown: [], card_name: 'Millennia', last_four: '5678' } }),
       ],
     )
     const cards = getAvailableCards(data)
