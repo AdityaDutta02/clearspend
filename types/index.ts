@@ -18,6 +18,8 @@ export interface Statement {
   total_credit: number
   currency: 'INR'
   uploaded_at: string
+  card_name: string | null
+  last_four: string | null
 }
 
 export interface Transaction {
@@ -55,6 +57,8 @@ export interface ParsedStatement {
   transactions: RawTransaction[]
   raw_header: string
   raw_text: string
+  card_name: string | null
+  last_four: string | null
 }
 
 export interface RawTransaction {
