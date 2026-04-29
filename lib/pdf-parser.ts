@@ -73,14 +73,26 @@ export async function parsePdf(
   }
 }
 
+const MONTH_ABBR: Record<string, string> = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+}
+
+// Matches DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YY, DD-MMM-YYYY, DD MMM YYYY
+const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]\d{2,4})`
+
 function extractTransactions(text: string): RawTransaction[] {
   const transactions: RawTransaction[] = []
-  const linePattern =
-    /(\d{2}[\/\-]\d{2}[\/\-]\d{4})\s+(.+?)\s+([\d,]+\.\d{2})\s*(Dr|Cr|DR|CR)?/g
+  // Amount before or after Dr/Cr marker
+  const linePattern = new RegExp(
+    `${DATE_PAT}\\s+(.+?)\\s+([\\d,]+\\.\\d{2})\\s*(Dr|Cr|DR|CR)?`,
+    'g',
+  )
 
   for (const match of text.matchAll(linePattern)) {
     const [, rawDate, rawDesc, rawAmount, drCr] = match
-    const date = normaliseDate(rawDate)
+    const date = normaliseDate(rawDate.trim())
+    if (!date) continue
     const amount = parseFloat(rawAmount.replace(/,/g, ''))
     const type = drCr?.toUpperCase() === 'CR' ? 'credit' : 'debit'
     const description = stripPii(rawDesc.trim())
@@ -92,10 +104,22 @@ function extractTransactions(text: string): RawTransaction[] {
 }
 
 function normaliseDate(raw: string): string {
-  const parts = raw.split(/[\/\-]/)
-  if (parts.length !== 3) return raw
-  const [dd, mm, yyyy] = parts
-  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  // DD/MM/YYYY or DD-MM-YYYY
+  const numeric = raw.match(/^(\d{1,2})[\/\-](\d{2})[\/\-](\d{2,4})$/)
+  if (numeric) {
+    const [, dd, mm, yyyy] = numeric
+    const year = yyyy.length === 2 ? (parseInt(yyyy) >= 50 ? `19${yyyy}` : `20${yyyy}`) : yyyy
+    return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+  }
+  // DD-MMM-YY or DD-MMM-YYYY or DD MMM YYYY
+  const named = raw.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})[\-\s](\d{2,4})$/)
+  if (named) {
+    const mm = MONTH_ABBR[named[2].toLowerCase()]
+    if (!mm) return ''
+    const year = named[3].length === 2 ? (parseInt(named[3]) >= 50 ? `19${named[3]}` : `20${named[3]}`) : named[3]
+    return `${year}-${mm}-${named[1].padStart(2, '0')}`
+  }
+  return ''
 }
 
 function extractUpiRef(description: string): string | null {

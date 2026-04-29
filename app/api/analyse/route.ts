@@ -5,6 +5,7 @@ import { categoriseTransactions } from '@/lib/ai/categorise'
 import { resolveUpiMerchants } from '@/lib/ai/upi-resolve'
 import { generateInsights } from '@/lib/ai/insights'
 import { extractTransactionsFromText } from '@/lib/ai/extract-transactions'
+import { detectBankAndMonth } from '@/lib/bank-detect'
 import type { Statement, Transaction, Analysis, CategorySlug } from '@/types'
 
 const RawTransactionSchema = z.object({
@@ -85,7 +86,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const firstDate = sanitisedTxs[0].date
     month = firstDate.slice(0, 7)
   }
+  if (!bank && rawText) {
+    bank = detectBankAndMonth(rawText, '').bank
+  }
   if (!bank) {
+    // No bank detected from PDF text or filename — log for debugging
+    console.warn(`[analyse:${reqId}] bank not detected, defaulting to hdfc`)
     bank = 'hdfc'
   }
 
