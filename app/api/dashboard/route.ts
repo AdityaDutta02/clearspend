@@ -7,7 +7,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const [statements, analyses] = await Promise.all([
-    dbList<Statement>('statements', {}, token),
+    dbList<Statement>('statements_v2', {}, token),
     dbList<Analysis>('analyses', {}, token),
   ])
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         const txIds = transactions.filter((t) => t.statement_id === s.id).map((t) => t.id)
         return [
           ...txIds.map((id) => dbDelete('transactions', id, token).catch(() => undefined)),
-          dbDelete('statements', s.id, token).catch(() => undefined),
+          dbDelete('statements_v2', s.id, token).catch(() => undefined),
         ]
       }),
     )

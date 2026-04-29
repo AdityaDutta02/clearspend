@@ -8,7 +8,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const results: Record<string, string> = {}
 
-  for (const table of ['statements', 'analyses', 'transactions']) {
+  for (const table of ['statements_v2', 'analyses', 'transactions']) {
     try {
       await dbDropTable(table, token)
       results[table] = 'dropped'
