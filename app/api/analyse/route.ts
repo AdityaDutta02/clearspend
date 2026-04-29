@@ -94,7 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   try {
     console.log(`[analyse:${reqId}] DB insert statement ${statementId}`)
-    await dbInsert<Statement>('statements_v2', {
+    await dbInsert<Statement>('statements', {
       id: statementId,
       month, bank, account_type,
       transaction_count: sanitisedTxs.length,
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Rollback: delete any inserted transactions and the statement
     await Promise.all([
       ...insertedTxIds.map((id) => dbDelete('transactions', id, token).catch(() => undefined)),
-      dbDelete('statements_v2', statementId, token).catch(() => undefined),
+      dbDelete('statements', statementId, token).catch(() => undefined),
     ])
     console.log(`[analyse:${reqId}] rollback complete (deleted ${insertedTxIds.length} txs + statement)`)
 

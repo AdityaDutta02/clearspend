@@ -10,8 +10,13 @@ CREATE TABLE IF NOT EXISTS statements (
   total_debit      NUMERIC NOT NULL DEFAULT 0,
   total_credit     NUMERIC NOT NULL DEFAULT 0,
   currency         TEXT NOT NULL DEFAULT 'INR',
-  uploaded_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  uploaded_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  card_name        TEXT,
+  last_four        TEXT
 );
+
+ALTER TABLE statements ADD COLUMN IF NOT EXISTS card_name TEXT;
+ALTER TABLE statements ADD COLUMN IF NOT EXISTS last_four TEXT;
 
 CREATE TABLE IF NOT EXISTS transactions (
   id               TEXT PRIMARY KEY,
