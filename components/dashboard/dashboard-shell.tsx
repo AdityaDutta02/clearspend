@@ -6,6 +6,7 @@ import {
   getSpendTrendData,
   getAvailableMonths,
   getAvailableBanks,
+  getAvailableCards,
 } from '@/lib/dashboard-data'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
@@ -30,6 +31,7 @@ export function DashboardShell({
   const kpiMetrics = computeKpis(filteredAnalyses, filter)
   const availableMonths = getAvailableMonths(data)
   const availableBanks = getAvailableBanks(data)
+  const availableCards = getAvailableCards(data)
   const trendData = getSpendTrendData(filteredAnalyses)
 
   return (
@@ -57,6 +59,7 @@ export function DashboardShell({
         <FilterBar
           availableMonths={availableMonths}
           availableBanks={availableBanks}
+          availableCards={availableCards}
           filter={filter}
           onChange={onFilterChange}
         />

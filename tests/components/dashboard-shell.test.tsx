@@ -8,7 +8,7 @@ import { makeAnalysis } from '@/tests/utils/factories'
 // Mock dashboard sub-components that are not under test here
 vi.mock('@/components/dashboard/filter-bar', () => ({
   FilterBar: ({ onChange }: { availableMonths: string[]; availableBanks: string[]; filter: FilterState; onChange: (f: FilterState) => void }) => (
-    <div data-testid="filter-bar" onClick={() => onChange({ month: null, bank: null })} />
+    <div data-testid="filter-bar" onClick={() => onChange({ month: null, bank: null, statement_id: null })} />
   ),
 }))
 
@@ -47,7 +47,7 @@ const makeData = (overrides: Partial<DashboardData> = {}): DashboardData => ({
   ...overrides,
 })
 
-const defaultFilter: FilterState = { month: null, bank: null }
+const defaultFilter: FilterState = { month: null, bank: null, statement_id: null }
 
 describe('DashboardShell', () => {
   beforeEach(() => {
@@ -126,6 +126,8 @@ describe('DashboardShell', () => {
           total_credit: 0,
           currency: 'INR',
           uploaded_at: '2025-01-31T00:00:00Z',
+          card_name: null,
+          last_four: null,
         },
         {
           id: 's2',
@@ -137,6 +139,8 @@ describe('DashboardShell', () => {
           total_credit: 0,
           currency: 'INR',
           uploaded_at: '2025-02-28T00:00:00Z',
+          card_name: null,
+          last_four: null,
         },
       ],
       analyses,
@@ -177,6 +181,8 @@ describe('DashboardShell', () => {
           total_credit: 0,
           currency: 'INR',
           uploaded_at: '2025-01-31T00:00:00Z',
+          card_name: null,
+          last_four: null,
         },
         {
           id: 's2',
@@ -188,13 +194,15 @@ describe('DashboardShell', () => {
           total_credit: 0,
           currency: 'INR',
           uploaded_at: '2025-02-28T00:00:00Z',
+          card_name: null,
+          last_four: null,
         },
       ],
       analyses,
     }
 
     // Filter to month 2025-01 — only s1/a1 should pass
-    const filter: FilterState = { month: '2025-01', bank: null }
+    const filter: FilterState = { month: '2025-01', bank: null, statement_id: null }
 
     render(
       <DashboardShell

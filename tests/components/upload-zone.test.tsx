@@ -25,6 +25,8 @@ const MOCK_PARSED_STATEMENT: ParsedStatement = {
   bank: 'hdfc',
   month: '2024-03',
   account_type: 'debit',
+  card_name: null,
+  last_four: null,
   transactions: [
     {
       date: '2024-03-01',
@@ -35,6 +37,7 @@ const MOCK_PARSED_STATEMENT: ParsedStatement = {
     },
   ],
   raw_header: 'HDFC Bank Account Statement March 2024',
+  raw_text: 'HDFC Bank full statement text',
 }
 
 describe('UploadZone', () => {
@@ -120,13 +123,15 @@ describe('UploadZone', () => {
     expect(onParsed).toHaveBeenCalledWith(
       expect.objectContaining({
         file: pdfFile,
-        text: MOCK_PARSED_STATEMENT.raw_header,
+        text: MOCK_PARSED_STATEMENT.raw_text,
         transactions: MOCK_PARSED_STATEMENT.transactions,
-        detection: {
+        detection: expect.objectContaining({
           bank: MOCK_PARSED_STATEMENT.bank,
           month: MOCK_PARSED_STATEMENT.month,
           account_type: MOCK_PARSED_STATEMENT.account_type,
-        },
+          card_name: MOCK_PARSED_STATEMENT.card_name,
+          last_four: MOCK_PARSED_STATEMENT.last_four,
+        }),
       }),
     )
   })

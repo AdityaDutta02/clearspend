@@ -60,6 +60,8 @@ export default function HomePage(): JSX.Element {
           month: pendingUpload.detection.month,
           bank: pendingUpload.detection.bank,
           account_type: pendingUpload.detection.account_type,
+          card_name: pendingUpload.detection.card_name,
+          last_four: pendingUpload.detection.last_four,
           transactions: pendingUpload.transactions,
           raw_text: pendingUpload.text,
         }),
