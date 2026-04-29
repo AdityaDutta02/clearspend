@@ -33,7 +33,7 @@ const MONTH_NAMES: Record<string, string> = {
 // Known card product names per bank (order matters — longer names first to avoid partial match)
 const CARD_NAMES: string[] = [
   // Multi-word first
-  'Amazon Pay', 'MakeMyTrip', 'Tata Neu', 'Yes First', 'Flipkart Axis',
+  'Amazon Pay', 'MakeMyTrip', 'Tata Neu', 'Yes First', 'Flipkart Axis', 'White Reserve',
   // HDFC
   'Regalia Gold', 'Regalia', 'Millennia', 'MoneyBack', 'Diners Club', 'Infinia', 'Freedom', 'Pixel', 'Tata',
   // ICICI
@@ -43,7 +43,7 @@ const CARD_NAMES: string[] = [
   // SBI
   'SimplyCLICK', 'SimplySAVE', 'Elite', 'Prime', 'Cashback',
   // Kotak
-  'League', 'Royale', 'White Reserve', 'Mojo',
+  'League', 'Royale', 'Mojo',
 ]
 
 // Shared alternation string for month names (long forms first to avoid short-form shadow)

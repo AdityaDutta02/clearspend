@@ -111,6 +111,11 @@ describe('detectBankAndMonth — card_name extraction', () => {
     expect(result.card_name).toBe('Flipkart')
   })
 
+  it('extracts Kotak White Reserve card name (not misidentified as Reserve)', () => {
+    const result = detectBankAndMonth('Kotak White Reserve Credit Card Statement')
+    expect(result.card_name).toBe('White Reserve')
+  })
+
   it('returns null card_name when not found', () => {
     const result = detectBankAndMonth('HDFC Bank Credit Card Statement March 2024')
     expect(result.card_name).toBeNull()
