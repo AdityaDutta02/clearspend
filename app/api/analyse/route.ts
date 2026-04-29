@@ -21,6 +21,8 @@ const AnalyseRequestSchema = z.object({
   account_type: z.enum(['credit', 'debit']),
   transactions: z.array(RawTransactionSchema).max(1000),
   raw_text: z.string().optional(),
+  card_name: z.string().nullable().optional(),
+  last_four: z.string().nullable().optional(),
 })
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -42,6 +44,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let { month, bank, account_type, transactions: rawTxs } = parsed.data
   const rawText = parsed.data.raw_text
+  const cardName = parsed.data.card_name ?? null
+  const lastFour = parsed.data.last_four ?? null
   console.log(`[analyse:${reqId}] parsed — txs=${rawTxs.length} hasRawText=${!!rawText} month=${month} bank=${bank} acct=${account_type}`)
 
   // AI fallback: extract transactions from raw text if regex got none
@@ -98,6 +102,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       total_credit: sanitisedTxs.filter((t) => t.type === 'credit').reduce((s, t) => s + t.amount, 0),
       currency: 'INR',
       uploaded_at: new Date().toISOString(),
+      card_name: cardName,
+      last_four: lastFour,
     }, token)
     console.log(`[analyse:${reqId}] DB statement OK`)
 
@@ -154,10 +160,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
 
-    const upiTxs = debits.filter((tx) => tx.upi_merchant)
+    const upiTxs = debits.filter((tx) => tx.upi_ref !== null)
     const upiMerchantTotalsMap = new Map<string, { total: number; count: number }>()
     for (const tx of upiTxs) {
-      const name = tx.upi_merchant!
+      const name = tx.upi_merchant ?? tx.upi_ref!
       const prev = upiMerchantTotalsMap.get(name) ?? { total: 0, count: 0 }
       upiMerchantTotalsMap.set(name, { total: prev.total + tx.amount, count: prev.count + 1 })
     }
