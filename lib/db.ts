@@ -74,3 +74,7 @@ export async function dbUpdate<T = Record<string, unknown>>(
 export async function dbDelete(table: string, id: string, embedToken: string): Promise<void> {
   await dbRequest('DELETE', `${table}/${id}`, undefined, embedToken)
 }
+
+export async function dbDropTable(table: string, embedToken: string): Promise<void> {
+  await dbRequest('DELETE', table, undefined, embedToken)
+}
