@@ -134,6 +134,11 @@ export function ConfirmModal({
     ? detection.account_type.charAt(0).toUpperCase() + detection.account_type.slice(1)
     : 'Unknown'
   const statementMonth = formatMonth(detection?.month ?? null)
+  const cardLabel = detection?.card_name && detection?.last_four
+    ? `${detection.card_name} ••••${detection.last_four}`
+    : detection?.last_four
+      ? `••••${detection.last_four}`
+      : detection?.card_name ?? null
 
   return (
     <div
@@ -189,6 +194,15 @@ export function ConfirmModal({
             </span>{' '}
             {statementMonth}
           </p>
+
+          {cardLabel !== null && (
+            <p className="text-sm" style={{ color: 'var(--muted)' }} data-testid="card-label">
+              <span className="font-medium" style={{ color: 'var(--text)' }}>
+                Card:
+              </span>{' '}
+              {cardLabel}
+            </p>
+          )}
         </div>
 
         {isUnknownBank && (
