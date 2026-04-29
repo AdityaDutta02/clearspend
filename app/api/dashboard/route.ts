@@ -7,8 +7,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const [statements, analyses] = await Promise.all([
-    dbList<Statement>('statements_v2', {}, token),
-    dbList<Analysis>('analyses', {}, token),
+    dbList<Statement>('statements_v2', {}, token).catch(() => [] as Statement[]),
+    dbList<Analysis>('analyses', {}, token).catch(() => [] as Analysis[]),
   ])
 
   // Auto-delete orphan statements (statement with no matching analysis — e.g. from a failed pipeline run)
