@@ -1,8 +1,16 @@
-import type { BankSlug, CategorySlug, DashboardData, Analysis } from '@/types'
+import type { BankSlug, CategorySlug, DashboardData, Analysis, Statement } from '@/types'
 
 export interface FilterState {
   month: string | null // "YYYY-MM" or null for all
   bank: BankSlug | null // or null for all
+  statement_id: string | null // null = all cards
+}
+
+export type CardDescriptor = {
+  statement_id: string
+  bank: BankSlug
+  card_name: string | null
+  last_four: string | null
 }
 
 export interface KpiMetrics {
@@ -27,6 +35,18 @@ export function getAvailableMonths(data: DashboardData): string[] {
   return months.sort((a, b) => b.localeCompare(a))
 }
 
+export function getAvailableCards(data: DashboardData): CardDescriptor[] {
+  const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
+  return data.statements
+    .filter((s): s is Statement => analysedIds.has(s.id))
+    .map((s) => ({
+      statement_id: s.id,
+      bank: s.bank,
+      card_name: s.card_name,
+      last_four: s.last_four,
+    }))
+}
+
 export function getAvailableBanks(data: DashboardData): BankSlug[] {
   const analysedIds = new Set(data.analyses.map((a) => a.statement_id))
   const banks = Array.from(
@@ -41,6 +61,7 @@ export function filterAnalyses(data: DashboardData, filter: FilterState): Analys
   const filteredStatements = statements.filter((s) => {
     if (filter.month !== null && s.month !== filter.month) return false
     if (filter.bank !== null && s.bank !== filter.bank) return false
+    if (filter.statement_id !== null && s.id !== filter.statement_id) return false
     return true
   })
 
@@ -75,7 +96,7 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
     }
   }
 
-  const totalSpend = currentAnalyses.reduce((sum, a) => sum + a.monthly_total, 0)
+  const totalSpend = currentAnalyses.reduce((sum, a) => sum + (Number(a.monthly_total) || 0), 0)
   const distinctMonths = new Set(currentAnalyses.map((a) => a.month)).size
   const avgMonthlySpend = distinctMonths > 0 ? totalSpend / distinctMonths : 0
 
@@ -109,14 +130,14 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
 
     const priorAnalyses = analyses.filter((a) => a.month === priorMonth)
     if (priorAnalyses.length > 0) {
-      const priorTotal = priorAnalyses.reduce((sum, a) => sum + a.monthly_total, 0)
+      const priorTotal = priorAnalyses.reduce((sum, a) => sum + (Number(a.monthly_total) || 0), 0)
       if (priorTotal !== 0) {
         monthOverMonthChange = ((totalSpend - priorTotal) / priorTotal) * 100
       }
     }
   }
 
-  const totalUpiSpent = currentAnalyses.reduce((sum, a) => sum + a.upi_summary.total_spent, 0)
+  const totalUpiSpent = currentAnalyses.reduce((sum, a) => sum + (Number(a.upi_summary?.total_spent) || 0), 0)
   const upiShare = totalSpend > 0 ? totalUpiSpent / totalSpend : 0
 
   return {
@@ -131,6 +152,6 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
 
 export function getSpendTrendData(analyses: Analysis[]): ChartPoint[] {
   return analyses
-    .map((a) => ({ month: a.month, total: a.monthly_total }))
+    .map((a) => ({ month: a.month, total: Number(a.monthly_total) || 0 }))
     .sort((a, b) => a.month.localeCompare(b.month))
 }
