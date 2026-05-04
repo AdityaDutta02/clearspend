@@ -86,7 +86,9 @@ function extractTransactions(text: string): RawTransaction[] {
   // Skip the PDF header (payment summary, credit limit, due dates) to avoid
   // false matches on header dates like "Payment Due Date: 12 May '26" pairing
   // with nearby amounts like the Credit Limit.
-  const txSectionIdx = text.search(/Transaction Summary/i)
+  const txSectionIdx = text.search(
+    /Transaction Summary|Date\s+(?:Transaction Details?|Description|Narration)\s|Debit\s*\/\s*Credit/i,
+  )
   const scanText = txSectionIdx > 0 ? text.slice(txSectionIdx) : text
 
   const transactions: RawTransaction[] = []
