@@ -12,6 +12,7 @@ import { FilterBar } from '@/components/dashboard/filter-bar'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { SpendTrendChart } from '@/components/dashboard/spend-trend-chart'
 import { UpiChart } from '@/components/dashboard/upi-chart'
+import { CategoryChart } from '@/components/dashboard/category-chart'
 import { InsightsStrip } from '@/components/dashboard/insights-strip'
 
 export interface DashboardShellProps {
@@ -65,6 +66,8 @@ export function DashboardShell({
         />
 
         <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
+
+        <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
 
         <SpendTrendChart data={trendData} isLoading={isLoading} />
 
