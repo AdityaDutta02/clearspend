@@ -83,6 +83,12 @@ const MONTH_ABBR: Record<string, string> = {
 const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]['‘’]?\d{2,4})`
 
 function extractTransactions(text: string): RawTransaction[] {
+  // Skip the PDF header (payment summary, credit limit, due dates) to avoid
+  // false matches on header dates like "Payment Due Date: 12 May '26" pairing
+  // with nearby amounts like the Credit Limit.
+  const txSectionIdx = text.search(/Transaction Summary/i)
+  const scanText = txSectionIdx > 0 ? text.slice(txSectionIdx) : text
+
   const transactions: RawTransaction[] = []
   // Handles:
   //   DD-MMM-'YY  description  ₹ 1,234.56  Debit/Credit    (Axis Bank)
@@ -92,7 +98,7 @@ function extractTransactions(text: string): RawTransaction[] {
     'g',
   )
 
-  for (const match of text.matchAll(linePattern)) {
+  for (const match of scanText.matchAll(linePattern)) {
     const [, rawDate, rawDesc, rawAmount, typeMarker] = match
     const date = normaliseDate(rawDate.trim())
     if (!date) continue
