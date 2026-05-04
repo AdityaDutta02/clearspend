@@ -134,7 +134,9 @@ export function detectBankAndMonth(headerText: string, fileName = ''): Detection
   // Keep the raw form (fileNameNoExt) for month detection because patterns like "12-2024" need the hyphen.
   const fileNameNorm = fileNameNoExt.replace(/[_\-]/g, ' ')
 
-  const bank = detectBank(headerText) ?? detectBank(fileNameNorm)
+  // Filename is the most reliable signal — user named the file after their bank.
+  // Text detection can false-positive on boilerplate/disclaimers (e.g. Axis PDF mentioning HDFC).
+  const bank = detectBank(fileNameNorm) ?? detectBank(headerText)
   const month = detectMonth(headerText) ?? detectMonth(fileNameNoExt)
   const account_type: AccountType = /credit card/i.test(headerText) ? 'credit' : 'debit'
   const last_four = detectLastFour(headerText, fileNameNoExt)

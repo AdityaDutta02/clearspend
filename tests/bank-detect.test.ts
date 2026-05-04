@@ -57,9 +57,10 @@ describe('detectBankAndMonth — filename detection', () => {
     expect(result.month).toBe('2024-12')
   })
 
-  it('header detection takes priority over filename for bank', () => {
+  it('filename takes priority over header text for bank', () => {
+    // Filename is the most reliable signal; header may have boilerplate from other banks
     const result = detectBankAndMonth('ICICI Bank Credit Card', 'HDFC_statement.pdf')
-    expect(result.bank).toBe('icici')
+    expect(result.bank).toBe('hdfc')
   })
 
   it('header detection takes priority over filename for month', () => {
