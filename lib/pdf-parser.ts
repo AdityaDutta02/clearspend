@@ -78,23 +78,28 @@ const MONTH_ABBR: Record<string, string> = {
   jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
 }
 
-// Matches DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YY, DD-MMM-YYYY, DD MMM YYYY
-const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]\d{2,4})`
+// Matches: DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YY, DD-MMM-YYYY, DD MMM 'YY (Axis Bank apostrophe format)
+const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]'?\d{2,4})`
 
 function extractTransactions(text: string): RawTransaction[] {
   const transactions: RawTransaction[] = []
-  // Amount before or after Dr/Cr marker
+  // Handles:
+  //   DD-MMM-'YY  description  ₹ 1,234.56  Debit/Credit    (Axis Bank)
+  //   DD/MM/YYYY  description  1,234.56 Dr/Cr              (HDFC/ICICI etc.)
   const linePattern = new RegExp(
-    `${DATE_PAT}\\s+(.+?)\\s+([\\d,]+\\.\\d{2})\\s*(Dr|Cr|DR|CR)?`,
+    `${DATE_PAT}\\s+(.+?)\\s+₹?\\s*([\\d,]+\\.\\d{2})\\s*(Debit|Credit|Dr|Cr|DR|CR)?`,
     'g',
   )
 
   for (const match of text.matchAll(linePattern)) {
-    const [, rawDate, rawDesc, rawAmount, drCr] = match
+    const [, rawDate, rawDesc, rawAmount, typeMarker] = match
     const date = normaliseDate(rawDate.trim())
     if (!date) continue
     const amount = parseFloat(rawAmount.replace(/,/g, ''))
-    const type = drCr?.toUpperCase() === 'CR' ? 'credit' : 'debit'
+    const type =
+      typeMarker?.toLowerCase() === 'credit' || typeMarker?.toUpperCase() === 'CR'
+        ? 'credit'
+        : 'debit'
     const description = stripPii(rawDesc.trim())
     const upiRef = extractUpiRef(description)
     transactions.push({ date, amount, type, description, upi_ref: upiRef })
@@ -104,15 +109,15 @@ function extractTransactions(text: string): RawTransaction[] {
 }
 
 function normaliseDate(raw: string): string {
-  // DD/MM/YYYY or DD-MM-YYYY
+  // DD/MM/YYYY or DD-MM-YYYY (or 2-digit year)
   const numeric = raw.match(/^(\d{1,2})[\/\-](\d{2})[\/\-](\d{2,4})$/)
   if (numeric) {
     const [, dd, mm, yyyy] = numeric
     const year = yyyy.length === 2 ? (parseInt(yyyy) >= 50 ? `19${yyyy}` : `20${yyyy}`) : yyyy
     return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
   }
-  // DD-MMM-YY or DD-MMM-YYYY or DD MMM YYYY
-  const named = raw.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})[\-\s](\d{2,4})$/)
+  // DD-MMM-YY/YYYY, DD MMM YYYY, DD MMM 'YY (Axis Bank apostrophe prefix)
+  const named = raw.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})[\-\s]'?(\d{2,4})$/)
   if (named) {
     const mm = MONTH_ABBR[named[2].toLowerCase()]
     if (!mm) return ''
