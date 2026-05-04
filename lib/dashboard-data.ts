@@ -25,6 +25,7 @@ export interface KpiMetrics {
 export interface ChartPoint {
   month: string // "YYYY-MM"
   total: number
+  categories: Partial<Record<CategorySlug, number>>
 }
 
 export function getAvailableMonths(data: DashboardData): string[] {
@@ -152,7 +153,19 @@ export function computeKpis(analyses: Analysis[], filter: FilterState): KpiMetri
 }
 
 export function getSpendTrendData(analyses: Analysis[]): ChartPoint[] {
-  return analyses
-    .map((a) => ({ month: a.month, total: Number(a.monthly_total) || 0 }))
+  const byMonth = new Map<string, { total: number; categories: Partial<Record<CategorySlug, number>> }>()
+
+  for (const a of analyses) {
+    const entry = byMonth.get(a.month) ?? { total: 0, categories: {} }
+    entry.total += Number(a.monthly_total) || 0
+    for (const [slug, amount] of Object.entries(a.category_breakdown ?? {})) {
+      const key = slug as CategorySlug
+      entry.categories[key] = (entry.categories[key] ?? 0) + (amount ?? 0)
+    }
+    byMonth.set(a.month, entry)
+  }
+
+  return Array.from(byMonth.entries())
+    .map(([month, { total, categories }]) => ({ month, total, categories }))
     .sort((a, b) => a.month.localeCompare(b.month))
 }
