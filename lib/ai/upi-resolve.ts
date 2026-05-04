@@ -37,7 +37,7 @@ export async function resolveUpiMerchants(
 
   try {
     const content = await callModel(
-      'qwen/qwen3-235b-a22b-2507',
+      'google/gemini-2.5-flash-lite',
       [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: JSON.stringify(input) },

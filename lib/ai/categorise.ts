@@ -38,7 +38,7 @@ export async function categoriseTransactions(
 
   try {
     const content = await callModel(
-      'deepseek/deepseek-v3.2',
+      'google/gemini-2.5-flash-lite',
       [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: JSON.stringify(input) },

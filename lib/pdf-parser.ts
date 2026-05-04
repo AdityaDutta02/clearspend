@@ -79,7 +79,8 @@ const MONTH_ABBR: Record<string, string> = {
 }
 
 // Matches: DD/MM/YYYY, DD-MM-YYYY, DD-MMM-YY, DD-MMM-YYYY, DD MMM 'YY (Axis Bank apostrophe format)
-const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]'?\d{2,4})`
+// ['‘’] handles ASCII apostrophe, Unicode left/right single quotes from PDF extraction
+const DATE_PAT = String.raw`(\d{1,2}[\/\-]\d{2}[\/\-]\d{2,4}|\d{1,2}[\-\s][A-Za-z]{3}[\-\s]['‘’]?\d{2,4})`
 
 function extractTransactions(text: string): RawTransaction[] {
   const transactions: RawTransaction[] = []
@@ -117,7 +118,7 @@ function normaliseDate(raw: string): string {
     return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
   }
   // DD-MMM-YY/YYYY, DD MMM YYYY, DD MMM 'YY (Axis Bank apostrophe prefix)
-  const named = raw.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})[\-\s]'?(\d{2,4})$/)
+  const named = raw.match(/^(\d{1,2})[\-\s]([A-Za-z]{3})[\-\s][''']?(\d{2,4})$/)
   if (named) {
     const mm = MONTH_ABBR[named[2].toLowerCase()]
     if (!mm) return ''
