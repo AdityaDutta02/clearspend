@@ -38,16 +38,22 @@ function formatInrShort(amount: number): string {
 
 function ShimmerBlock(): JSX.Element {
   return (
-    <div className="flex flex-col gap-4" aria-hidden="true" data-testid="shimmer-block">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex flex-col gap-1">
+    <div className="flex flex-col gap-5" aria-hidden="true" data-testid="shimmer-block">
+      {[72, 58, 45, 35, 26].map((w, i) => (
+        <div key={i} className="flex flex-col gap-2">
+          <div className="flex justify-between">
+            <div
+              className="animate-pulse rounded-md"
+              style={{ height: '13px', width: `${w * 0.8}%`, background: 'var(--border)' }}
+            />
+            <div
+              className="animate-pulse rounded-md"
+              style={{ height: '13px', width: '44px', background: 'var(--border)' }}
+            />
+          </div>
           <div
-            className="animate-pulse rounded"
-            style={{ height: '14px', width: '60%', background: 'var(--border)' }}
-          />
-          <div
-            className="animate-pulse rounded"
-            style={{ height: '8px', width: '80%', background: 'var(--border)' }}
+            className="animate-pulse rounded-full"
+            style={{ height: '6px', width: `${w}%`, background: 'var(--border)' }}
           />
         </div>
       ))}
@@ -61,47 +67,90 @@ export function UpiChart({ analyses, isLoading }: UpiChartProps): JSX.Element {
 
   return (
     <div className="card" data-testid="upi-chart">
-      <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
-        Top UPI Merchants
-      </p>
+      {/* Card header */}
+      <div style={{ marginBottom: '20px' }}>
+        <p
+          style={{
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: 'var(--muted)',
+            marginBottom: '4px',
+          }}
+        >
+          UPI
+        </p>
+        <p
+          style={{
+            fontSize: '1rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--text)',
+          }}
+        >
+          Top UPI Merchants
+        </p>
+      </div>
 
       {isLoading ? (
         <ShimmerBlock />
       ) : merchants.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>No UPI transactions found</p>
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No UPI transactions found</p>
       ) : (
         <ul className="flex flex-col gap-4" role="list">
-          {merchants.map((merchant) => {
+          {merchants.map((merchant, index) => {
             const widthPct = maxTotal > 0 ? (merchant.total / maxTotal) * 100 : 0
+            const rank = index + 1
+
             return (
               <li key={merchant.name} data-testid={`upi-merchant-${merchant.name}`}>
-                <div className="flex justify-between mb-1">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <span
+                      style={{
+                        fontSize: '0.6rem',
+                        fontWeight: 800,
+                        color: rank === 1 ? 'var(--primary)' : 'var(--muted)',
+                        opacity: rank === 1 ? 1 : 0.6,
+                        letterSpacing: '0.04em',
+                        minWidth: '14px',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {rank}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.825rem',
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                        letterSpacing: '-0.01em',
+                        maxWidth: '160px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {merchant.name}
+                    </span>
+                  </div>
                   <span
-                    className="text-sm font-medium truncate"
-                    style={{ color: 'var(--text)', maxWidth: '70%' }}
+                    className="tabular"
+                    style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}
                   >
-                    {merchant.name}
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--muted)' }}>
                     {formatInrShort(merchant.total)}
                   </span>
                 </div>
-                <div
-                  style={{
-                    width: '100%',
-                    height: '8px',
-                    background: 'var(--border)',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                  }}
-                >
+
+                <div className="progress-track">
                   <div
+                    className="progress-fill"
                     style={{
                       width: `${widthPct}%`,
-                      height: '100%',
-                      background: 'var(--primary-light)',
-                      borderRadius: '4px',
-                      transition: 'width 0.3s ease',
+                      background: rank === 1
+                        ? 'var(--primary-light)'
+                        : `rgba(16, 185, 129, ${0.35 + (1 - rank / 5) * 0.45})`,
                     }}
                     aria-label={`${merchant.name}: ${widthPct.toFixed(0)}% of top merchant`}
                   />

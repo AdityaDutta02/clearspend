@@ -28,7 +28,7 @@ const CATEGORY_COLORS: Record<CategorySlug, string> = {
   entertainment: '#ec4899',
   health: '#14b8a6',
   travel: '#f59e0b',
-  others: '#6b7280',
+  others: '#94a3b8',
 }
 
 interface CategoryTotal {
@@ -65,16 +65,22 @@ function formatInrShort(amount: number): string {
 
 function ShimmerBlock(): JSX.Element {
   return (
-    <div className="flex flex-col gap-4" aria-hidden="true" data-testid="category-shimmer">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex flex-col gap-1">
+    <div className="flex flex-col gap-5" aria-hidden="true" data-testid="category-shimmer">
+      {[80, 65, 52, 40, 30].map((w, i) => (
+        <div key={i} className="flex flex-col gap-2">
+          <div className="flex justify-between">
+            <div
+              className="animate-pulse rounded-md"
+              style={{ height: '13px', width: `${w * 0.7}%`, background: 'var(--border)' }}
+            />
+            <div
+              className="animate-pulse rounded-md"
+              style={{ height: '13px', width: '48px', background: 'var(--border)' }}
+            />
+          </div>
           <div
-            className="animate-pulse rounded"
-            style={{ height: '14px', width: '50%', background: 'var(--border)' }}
-          />
-          <div
-            className="animate-pulse rounded"
-            style={{ height: '8px', width: '75%', background: 'var(--border)' }}
+            className="animate-pulse rounded-full"
+            style={{ height: '6px', width: `${w}%`, background: 'var(--border)' }}
           />
         </div>
       ))}
@@ -89,51 +95,85 @@ export function CategoryChart({ analyses, isLoading }: CategoryChartProps): JSX.
 
   return (
     <div className="card" data-testid="category-chart">
-      <p className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>
-        Spend by Category
-      </p>
+      {/* Card header */}
+      <div style={{ marginBottom: '20px' }}>
+        <p
+          style={{
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: 'var(--muted)',
+            marginBottom: '4px',
+          }}
+        >
+          Breakdown
+        </p>
+        <p
+          style={{
+            fontSize: '1rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--text)',
+          }}
+        >
+          Spend by Category
+        </p>
+      </div>
 
       {isLoading ? (
         <ShimmerBlock />
       ) : categories.length === 0 ? (
-        <p style={{ color: 'var(--muted)' }}>No spend data available</p>
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No spend data available</p>
       ) : (
         <ul className="flex flex-col gap-4" role="list">
           {categories.map(({ slug, total }) => {
             const widthPct = maxTotal > 0 ? (total / maxTotal) * 100 : 0
             const sharePct = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0
             const color = CATEGORY_COLORS[slug]
+
             return (
               <li key={slug} data-testid={`category-${slug}`}>
-                <div className="flex justify-between mb-1">
-                  <span
-                    className="text-sm font-medium truncate"
-                    style={{ color: 'var(--text)', maxWidth: '65%' }}
-                  >
-                    {CATEGORY_DISPLAY_NAMES[slug]}
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--muted)' }}>
-                    {formatInrShort(total)}{' '}
-                    <span style={{ fontSize: '0.7rem' }}>{sharePct}%</span>
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: color,
+                        flexShrink: 0,
+                        display: 'inline-block',
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: '0.825rem',
+                        fontWeight: 600,
+                        color: 'var(--text)',
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      {CATEGORY_DISPLAY_NAMES[slug]}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexShrink: 0 }}>
+                    <span
+                      className="tabular"
+                      style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text)' }}
+                    >
+                      {formatInrShort(total)}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--muted)' }}>
+                      {sharePct}%
+                    </span>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    width: '100%',
-                    height: '8px',
-                    background: 'var(--border)',
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                  }}
-                >
+
+                <div className="progress-track">
                   <div
-                    style={{
-                      width: `${widthPct}%`,
-                      height: '100%',
-                      background: color,
-                      borderRadius: '4px',
-                      transition: 'width 0.3s ease',
-                    }}
+                    className="progress-fill"
+                    style={{ width: `${widthPct}%`, background: color }}
                     aria-label={`${CATEGORY_DISPLAY_NAMES[slug]}: ${sharePct}% of total`}
                   />
                 </div>

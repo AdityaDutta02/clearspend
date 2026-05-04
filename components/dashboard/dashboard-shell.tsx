@@ -38,42 +38,90 @@ export function DashboardShell({
   return (
     <main
       className="min-h-dvh"
-      style={{ background: 'var(--background)' }}
+      style={{ background: 'var(--bg)' }}
       data-testid="dashboard-shell"
     >
-      <div className="max-w-4xl mx-auto px-4 py-8 flex flex-col gap-6">
-        <div>
-          <h1
-            className="font-bold text-2xl"
-            style={{ color: 'var(--text)' }}
+      <div className="max-w-5xl mx-auto px-4 py-10 flex flex-col gap-7">
+
+        {/* ── Header ── */}
+        <div className="reveal">
+          <div
+            className="eyebrow"
+            style={{
+              background: 'var(--primary-subtle)',
+              color: 'var(--primary)',
+              marginBottom: '14px',
+            }}
           >
-            ClearSpend
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: 'var(--primary)',
+                flexShrink: 0,
+              }}
+            />
+            Your financial picture
+          </div>
+
+          <h1
+            style={{
+              fontSize: 'clamp(1.9rem, 5vw, 3rem)',
+              fontWeight: 800,
+              letterSpacing: '-0.04em',
+              lineHeight: 1.0,
+              color: 'var(--text)',
+            }}
+          >
+            Clear<span style={{ color: 'var(--primary-light)' }}>Spend</span>
           </h1>
+
           <p
-            className="text-sm mt-1"
-            style={{ color: 'var(--muted)' }}
+            style={{
+              fontSize: '0.9rem',
+              color: 'var(--muted)',
+              marginTop: '8px',
+              fontWeight: 400,
+              letterSpacing: '-0.01em',
+            }}
           >
             Your money, finally legible.
           </p>
         </div>
 
-        <FilterBar
-          availableMonths={availableMonths}
-          availableBanks={availableBanks}
-          availableCards={availableCards}
-          filter={filter}
-          onChange={onFilterChange}
-        />
+        {/* ── Filter bar ── */}
+        <div className="reveal reveal-d1">
+          <FilterBar
+            availableMonths={availableMonths}
+            availableBanks={availableBanks}
+            availableCards={availableCards}
+            filter={filter}
+            onChange={onFilterChange}
+          />
+        </div>
 
-        <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
+        {/* ── KPI row ── */}
+        <div className="reveal reveal-d2">
+          <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
+        </div>
 
-        <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
+        {/* ── Hero: Spend Trend (full width) ── */}
+        <div className="reveal reveal-d3">
+          <SpendTrendChart data={trendData} isLoading={isLoading} />
+        </div>
 
-        <SpendTrendChart data={trendData} isLoading={isLoading} />
+        {/* ── Bento row: Category (40%) + UPI (60%) ── */}
+        <div className="grid grid-cols-1 gap-5 reveal reveal-d4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+          <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
+          <UpiChart analyses={filteredAnalyses} isLoading={isLoading} />
+        </div>
 
-        <UpiChart analyses={filteredAnalyses} isLoading={isLoading} />
+        {/* ── Insights (full width) ── */}
+        <div className="reveal reveal-d5">
+          <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
+        </div>
 
-        <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
       </div>
     </main>
   )

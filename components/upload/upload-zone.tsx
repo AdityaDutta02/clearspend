@@ -26,19 +26,20 @@ export interface UploadZoneProps {
 
 type UploadState = 'idle' | 'drag-over' | 'loading' | 'password-prompt'
 
-function CloudUploadIcon(): JSX.Element {
+function UploadIcon({ active }: { active: boolean }): JSX.Element {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="48"
-      height="48"
+      width="40"
+      height="40"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
+      stroke={active ? 'var(--primary-light)' : 'var(--muted)'}
+      strokeWidth="1.25"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      style={{ transition: 'stroke 0.22s cubic-bezier(0.32,0.72,0,1)' }}
     >
       <polyline points="16 16 12 12 8 16" />
       <line x1="12" y1="12" x2="12" y2="21" />
@@ -51,12 +52,12 @@ function LockIcon(): JSX.Element {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="40"
-      height="40"
+      width="32"
+      height="32"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
+      stroke="var(--primary)"
+      strokeWidth="1.25"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -71,12 +72,12 @@ function Spinner(): JSX.Element {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      width="22"
+      height="22"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
+      stroke="var(--primary)"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -244,159 +245,193 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
   const isLoading = state === 'loading'
   const isPasswordPrompt = state === 'password-prompt'
 
-  const borderColor = isDragOver ? 'var(--primary-light)' : 'var(--border)'
-  const backgroundColor = isDragOver ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
-
   return (
+    /* Double-bezel outer shell */
     <div
-      role={isPasswordPrompt ? undefined : 'button'}
-      tabIndex={isPasswordPrompt ? undefined : 0}
-      aria-label={isPasswordPrompt ? undefined : 'Upload PDF statement'}
-      aria-disabled={isPasswordPrompt ? undefined : disabled || isLoading}
-      data-testid="upload-zone"
-      onClick={isPasswordPrompt ? undefined : handleClick}
-      onKeyDown={isPasswordPrompt ? undefined : handleKeyDown}
-      onDragOver={handleDragOver}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       style={{
-        border: `2px dashed ${borderColor}`,
-        borderRadius: '16px',
-        backgroundColor,
-        minHeight: '200px',
+        padding: '2px',
+        borderRadius: '1.5rem',
+        background: isDragOver
+          ? 'var(--primary-subtle)'
+          : 'rgba(11, 25, 41, 0.03)',
+        border: isDragOver
+          ? '1.5px solid var(--primary-border)'
+          : '1.5px dashed var(--border-medium)',
+        transition: 'all 0.28s cubic-bezier(0.32,0.72,0,1)',
         opacity: disabled ? 0.5 : 1,
-        cursor: isPasswordPrompt ? 'default' : disabled || isLoading ? 'not-allowed' : 'pointer',
-        transition: 'border-color 0.2s ease, background-color 0.2s ease',
       }}
-      className="flex flex-col items-center justify-center gap-3 p-8 select-none"
     >
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".pdf,application/pdf"
-        onChange={handleChange}
-        className="hidden"
-        aria-hidden="true"
-        tabIndex={-1}
-        data-testid="upload-input"
-      />
+      <div
+        role={isPasswordPrompt ? undefined : 'button'}
+        tabIndex={isPasswordPrompt ? undefined : 0}
+        aria-label={isPasswordPrompt ? undefined : 'Upload PDF statement'}
+        aria-disabled={isPasswordPrompt ? undefined : disabled || isLoading}
+        data-testid="upload-zone"
+        onClick={isPasswordPrompt ? undefined : handleClick}
+        onKeyDown={isPasswordPrompt ? undefined : handleKeyDown}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{
+          background: isDragOver ? 'rgba(4,120,87,0.04)' : 'var(--surface)',
+          borderRadius: 'calc(1.5rem - 2px)',
+          minHeight: '160px',
+          cursor: isPasswordPrompt ? 'default' : disabled || isLoading ? 'not-allowed' : 'pointer',
+          transition: 'background 0.28s cubic-bezier(0.32,0.72,0,1)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,1)',
+        }}
+        className="flex flex-col items-center justify-center gap-3 p-8 select-none"
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={handleChange}
+          className="hidden"
+          aria-hidden="true"
+          tabIndex={-1}
+          data-testid="upload-input"
+        />
 
-      {isLoading && (
-        <>
-          <div style={{ color: 'var(--primary)' }}>
+        {isLoading && (
+          <>
             <Spinner />
-          </div>
-          <p className="text-sm font-medium" style={{ color: 'var(--muted)' }} data-testid="loading-text">
-            Parsing PDF…
-          </p>
-          {pendingFile && (
-            <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              {pendingFile.name}
-            </p>
-          )}
-        </>
-      )}
-
-      {isPasswordPrompt && (
-        <>
-          <div style={{ color: 'var(--primary)' }}>
-            <LockIcon />
-          </div>
-          <p className="font-semibold text-base" style={{ color: 'var(--text)' }}>
-            PDF is password protected
-          </p>
-          {passwordError && (
-            <p className="text-xs font-medium" style={{ color: '#dc2626' }} data-testid="password-error">
-              Incorrect password. Try again.
-            </p>
-          )}
-          <form
-            onSubmit={handlePasswordSubmit}
-            className="flex flex-col items-center gap-2 w-full max-w-xs"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value) }}
-              placeholder="Enter PDF password"
-              autoFocus
-              data-testid="password-input"
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                border: `1px solid ${passwordError ? '#dc2626' : 'var(--border)'}`,
-                background: 'var(--background)',
-                color: 'var(--text)',
-                fontSize: '14px',
-              }}
-            />
-            <div className="flex gap-2 w-full">
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); resetToIdle() }}
-                data-testid="password-cancel"
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--border)',
-                  background: 'transparent',
-                  color: 'var(--muted)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                }}
+            <div style={{ textAlign: 'center' }}>
+              <p
+                style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}
+                data-testid="loading-text"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!password.trim()}
-                data-testid="password-submit"
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: password.trim() ? 'var(--primary)' : 'var(--border)',
-                  color: password.trim() ? '#fff' : 'var(--muted)',
-                  fontSize: '14px',
-                  cursor: password.trim() ? 'pointer' : 'not-allowed',
-                  fontWeight: 500,
-                }}
-              >
-                Unlock
-              </button>
+                Parsing PDF…
+              </p>
+              {pendingFile && (
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '3px' }}>
+                  {pendingFile.name}
+                </p>
+              )}
             </div>
-          </form>
-        </>
-      )}
+          </>
+        )}
 
-      {!isLoading && !isPasswordPrompt && (
-        <>
-          <div style={{ color: isDragOver ? 'var(--primary-light)' : 'var(--muted)' }}>
-            <CloudUploadIcon />
-          </div>
-          <div className="text-center">
+        {isPasswordPrompt && (
+          <>
+            <div style={{ color: 'var(--primary)' }}>
+              <LockIcon />
+            </div>
             <p
-              className="font-semibold text-base"
-              style={{ color: 'var(--text)' }}
-              data-testid="upload-heading"
+              style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}
             >
-              Drop your bank statement here
+              PDF is password protected
             </p>
-            <p
-              className="text-sm mt-1"
-              style={{ color: 'var(--muted)' }}
-              data-testid="upload-subtext"
+            {passwordError && (
+              <p
+                style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent-negative)' }}
+                data-testid="password-error"
+              >
+                Incorrect password. Try again.
+              </p>
+            )}
+            <form
+              onSubmit={handlePasswordSubmit}
+              className="flex flex-col items-center gap-2 w-full max-w-xs"
+              onClick={(e) => e.stopPropagation()}
             >
-              or click to browse · PDF only
-            </p>
-          </div>
-        </>
-      )}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value) }}
+                placeholder="Enter PDF password"
+                autoFocus
+                data-testid="password-input"
+                style={{
+                  width: '100%',
+                  padding: '9px 14px',
+                  borderRadius: '10px',
+                  border: `1px solid ${passwordError ? 'var(--accent-negative)' : 'var(--border-medium)'}`,
+                  background: 'var(--surface-raised)',
+                  color: 'var(--text)',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                }}
+              />
+              <div className="flex gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); resetToIdle() }}
+                  data-testid="password-cancel"
+                  style={{
+                    flex: 1,
+                    padding: '9px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-medium)',
+                    background: 'transparent',
+                    color: 'var(--muted)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!password.trim()}
+                  data-testid="password-submit"
+                  style={{
+                    flex: 1,
+                    padding: '9px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: password.trim() ? 'var(--primary)' : 'var(--border)',
+                    color: password.trim() ? '#fff' : 'var(--muted)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    fontFamily: 'inherit',
+                    cursor: password.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.22s cubic-bezier(0.32,0.72,0,1)',
+                  }}
+                >
+                  Unlock
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        {!isLoading && !isPasswordPrompt && (
+          <>
+            <UploadIcon active={isDragOver} />
+            <div style={{ textAlign: 'center' }}>
+              <p
+                style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  letterSpacing: '-0.02em',
+                }}
+                data-testid="upload-heading"
+              >
+                Drop your bank statement here
+              </p>
+              <p
+                style={{
+                  fontSize: '0.78rem',
+                  color: 'var(--muted)',
+                  marginTop: '4px',
+                  fontWeight: 400,
+                }}
+                data-testid="upload-subtext"
+              >
+                or click to browse · PDF only
+              </p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }

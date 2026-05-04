@@ -20,18 +20,9 @@ export interface ConfirmModalProps {
 }
 
 const MONTH_NAMES: Record<string, string> = {
-  '01': 'January',
-  '02': 'February',
-  '03': 'March',
-  '04': 'April',
-  '05': 'May',
-  '06': 'June',
-  '07': 'July',
-  '08': 'August',
-  '09': 'September',
-  '10': 'October',
-  '11': 'November',
-  '12': 'December',
+  '01': 'January', '02': 'February', '03': 'March', '04': 'April',
+  '05': 'May', '06': 'June', '07': 'July', '08': 'August',
+  '09': 'September', '10': 'October', '11': 'November', '12': 'December',
 }
 
 function formatMonth(yearMonth: string | null): string {
@@ -50,8 +41,8 @@ function Spinner(): JSX.Element {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -59,7 +50,8 @@ function Spinner(): JSX.Element {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="animate-spin inline-block mr-2"
+      className="animate-spin inline-block"
+      style={{ marginRight: '6px', verticalAlign: 'middle' }}
     >
       <line x1="12" y1="2" x2="12" y2="6" />
       <line x1="12" y1="18" x2="12" y2="22" />
@@ -70,6 +62,38 @@ function Spinner(): JSX.Element {
       <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
       <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
     </svg>
+  )
+}
+
+interface DetailRowProps {
+  label: string
+  value: string
+  testId?: string
+}
+
+function DetailRow({ label, value, testId }: DetailRowProps): JSX.Element {
+  return (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'baseline' }}>
+      <span
+        style={{
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'var(--muted)',
+          minWidth: '120px',
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text)' }}
+        data-testid={testId}
+      >
+        {value}
+      </span>
+    </div>
   )
 }
 
@@ -142,137 +166,178 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        background: 'rgba(11, 25, 41, 0.55)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+      }}
       onClick={handleBackdropClick}
       onKeyDown={handleBackdropKeyDown}
       role="presentation"
       data-testid="modal-backdrop"
     >
+      {/* Double-bezel modal */}
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="card w-full"
-        style={{ maxWidth: '480px', position: 'relative' }}
-        data-testid="confirm-modal"
+        style={{
+          padding: '2px',
+          background: 'rgba(11, 25, 41, 0.04)',
+          border: '1px solid rgba(11, 25, 41, 0.08)',
+          borderRadius: '1.5rem',
+          width: '100%',
+          maxWidth: '480px',
+          boxShadow: 'var(--shadow-modal)',
+        }}
         onClick={(e: MouseEvent<HTMLDivElement>): void => e.stopPropagation()}
       >
-        <h2
-          id={titleId}
-          className="text-lg font-semibold mb-4"
-          style={{ color: 'var(--text)' }}
-          data-testid="modal-title"
-        >
-          Confirm Analysis
-        </h2>
-
-        <div className="mb-4 space-y-2">
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            <span className="font-medium" style={{ color: 'var(--text)' }}>
-              File:
-            </span>{' '}
-            {fileName}
-          </p>
-
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            <span className="font-medium" style={{ color: 'var(--text)' }}>
-              Bank:
-            </span>{' '}
-            <span data-testid="bank-name">{bankName}</span>
-          </p>
-
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            <span className="font-medium" style={{ color: 'var(--text)' }}>
-              Account Type:
-            </span>{' '}
-            {accountType}
-          </p>
-
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            <span className="font-medium" style={{ color: 'var(--text)' }}>
-              Statement Period:
-            </span>{' '}
-            {statementMonth}
-          </p>
-
-          {cardLabel !== null && (
-            <p className="text-sm" style={{ color: 'var(--muted)' }} data-testid="card-label">
-              <span className="font-medium" style={{ color: 'var(--text)' }}>
-                Card:
-              </span>{' '}
-              {cardLabel}
-            </p>
-          )}
-        </div>
-
-        {isUnknownBank && (
-          <div
-            className="mb-4 p-3 rounded-lg text-sm"
-            style={{
-              background: 'rgba(245, 158, 11, 0.08)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              color: '#92400e',
-            }}
-            data-testid="unknown-bank-warning"
-          >
-            We detected this as an unknown bank. Analysis quality may be lower.
-          </div>
-        )}
-
         <div
-          className="mb-6 p-3 rounded-lg text-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          data-testid="confirm-modal"
           style={{
-            background: 'rgba(30, 64, 175, 0.06)',
-            border: '1px solid rgba(30, 64, 175, 0.15)',
-            color: 'var(--text)',
+            background: 'var(--surface)',
+            borderRadius: 'calc(1.5rem - 2px)',
+            padding: '28px',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,1)',
           }}
-          data-testid="credit-cost-notice"
         >
-          This analysis will use{' '}
-          <strong>{creditCost} credits</strong>
-        </div>
-
-        <div className="flex gap-3 justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isAnalysing}
-            className="px-4 py-2 text-sm font-medium rounded-lg transition-opacity"
+          {/* Title */}
+          <h2
+            id={titleId}
             style={{
-              color: 'var(--muted)',
+              fontSize: '1.1rem',
+              fontWeight: 800,
+              letterSpacing: '-0.03em',
+              color: 'var(--text)',
+              marginBottom: '22px',
+            }}
+            data-testid="modal-title"
+          >
+            Confirm Analysis
+          </h2>
+
+          {/* Details block */}
+          <div
+            style={{
+              background: 'rgba(11, 25, 41, 0.025)',
               border: '1px solid var(--border)',
-              background: 'transparent',
-              opacity: isAnalysing ? 0.5 : 1,
-              cursor: isAnalysing ? 'not-allowed' : 'pointer',
+              borderRadius: '1rem',
+              padding: '16px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
             }}
-            data-testid="cancel-button"
           >
-            Cancel
-          </button>
-
-          <button
-            ref={confirmButtonRef}
-            type="button"
-            onClick={onConfirm}
-            disabled={isAnalysing}
-            className="px-4 py-2 text-sm font-medium rounded-lg transition-opacity"
-            style={{
-              color: '#ffffff',
-              background: 'var(--primary)',
-              opacity: isAnalysing ? 0.7 : 1,
-              cursor: isAnalysing ? 'not-allowed' : 'pointer',
-            }}
-            data-testid="confirm-button"
-          >
-            {isAnalysing ? (
-              <>
-                <Spinner />
-                Analysing…
-              </>
-            ) : (
-              'Analyse Statement'
+            <DetailRow label="File" value={fileName} />
+            <DetailRow label="Bank" value={bankName} testId="bank-name" />
+            <DetailRow label="Account Type" value={accountType} />
+            <DetailRow label="Period" value={statementMonth} />
+            {cardLabel !== null && (
+              <DetailRow label="Card" value={cardLabel} testId="card-label" />
             )}
-          </button>
+          </div>
+
+          {/* Unknown bank warning */}
+          {isUnknownBank && (
+            <div
+              style={{
+                marginBottom: '12px',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                fontSize: '0.8rem',
+                lineHeight: 1.5,
+                background: 'rgba(245, 158, 11, 0.07)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                color: '#92400e',
+                fontWeight: 500,
+              }}
+              data-testid="unknown-bank-warning"
+            >
+              We detected this as an unknown bank. Analysis quality may be lower.
+            </div>
+          )}
+
+          {/* Credit cost notice */}
+          <div
+            style={{
+              marginBottom: '24px',
+              padding: '12px 14px',
+              borderRadius: '10px',
+              fontSize: '0.8rem',
+              lineHeight: 1.5,
+              background: 'var(--primary-subtle)',
+              border: '1px solid var(--primary-border)',
+              color: 'var(--primary)',
+              fontWeight: 500,
+            }}
+            data-testid="credit-cost-notice"
+          >
+            This analysis will use <strong style={{ fontWeight: 800 }}>{creditCost} credits</strong>
+          </div>
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isAnalysing}
+              data-testid="cancel-button"
+              style={{
+                padding: '9px 18px',
+                borderRadius: '999px',
+                border: '1px solid var(--border-medium)',
+                background: 'transparent',
+                color: 'var(--muted)',
+                fontSize: '0.825rem',
+                fontWeight: 600,
+                fontFamily: 'inherit',
+                cursor: isAnalysing ? 'not-allowed' : 'pointer',
+                opacity: isAnalysing ? 0.5 : 1,
+                transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              ref={confirmButtonRef}
+              type="button"
+              onClick={onConfirm}
+              disabled={isAnalysing}
+              data-testid="confirm-button"
+              style={{
+                padding: '9px 18px',
+                borderRadius: '999px',
+                border: 'none',
+                background: 'var(--primary)',
+                color: '#ffffff',
+                fontSize: '0.825rem',
+                fontWeight: 700,
+                fontFamily: 'inherit',
+                cursor: isAnalysing ? 'not-allowed' : 'pointer',
+                opacity: isAnalysing ? 0.75 : 1,
+                transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
+                boxShadow: isAnalysing ? 'none' : '0 2px 8px rgba(4,120,87,0.3)',
+              }}
+            >
+              {isAnalysing ? (
+                <>
+                  <Spinner />
+                  Analysing…
+                </>
+              ) : (
+                'Analyse Statement'
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

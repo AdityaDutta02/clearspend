@@ -118,23 +118,22 @@ export default function HomePage(): JSX.Element {
   if (token === null) {
     return (
       <div
-        className="min-h-dvh flex flex-col items-center justify-center gap-3"
-        style={{ background: 'var(--background)' }}
+        className="min-h-dvh flex flex-col items-center justify-center gap-4"
+        style={{ background: 'var(--bg)' }}
         data-testid="main-page"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="32"
-          height="32"
+          width="28"
+          height="28"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+          stroke="var(--primary)"
+          strokeWidth="1.75"
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
           className="animate-spin"
-          style={{ color: 'var(--primary)' }}
           data-testid="connecting-spinner"
         >
           <line x1="12" y1="2" x2="12" y2="6" />
@@ -146,7 +145,10 @@ export default function HomePage(): JSX.Element {
           <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
           <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
         </svg>
-        <p className="text-sm" style={{ color: 'var(--muted)' }} data-testid="connecting-text">
+        <p
+          style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--muted)', letterSpacing: '-0.01em' }}
+          data-testid="connecting-text"
+        >
           Connecting…
         </p>
       </div>
@@ -157,39 +159,65 @@ export default function HomePage(): JSX.Element {
   if (data === null) {
     return (
       <div
-        className="min-h-dvh flex flex-col gap-4 max-w-4xl mx-auto px-4 py-8"
-        style={{ background: 'var(--background)' }}
+        className="min-h-dvh flex flex-col gap-5 max-w-5xl mx-auto px-4 py-10"
+        style={{ background: 'var(--bg)' }}
         data-testid="main-page"
       >
+        {/* Header shimmer */}
+        <div className="flex flex-col gap-2">
+          <div
+            className="animate-pulse rounded-full"
+            style={{ height: '22px', width: '140px', background: 'var(--border)' }}
+            aria-hidden="true"
+            data-testid="loading-shimmer"
+          />
+          <div
+            className="animate-pulse rounded-lg"
+            style={{ height: '42px', width: '200px', background: 'var(--border)' }}
+            aria-hidden="true"
+          />
+          <div
+            className="animate-pulse rounded-md"
+            style={{ height: '16px', width: '160px', background: 'var(--border)' }}
+            aria-hidden="true"
+          />
+        </div>
+
+        {/* Upload shimmer */}
         <div
-          className="animate-pulse rounded"
-          style={{ height: '2rem', width: '40%', background: 'var(--border)' }}
-          aria-hidden="true"
-          data-testid="loading-shimmer"
-        />
-        <div
-          className="animate-pulse rounded"
-          style={{ height: '1rem', width: '25%', background: 'var(--border)' }}
+          className="animate-pulse rounded-3xl"
+          style={{ height: '164px', width: '100%', background: 'var(--border)' }}
           aria-hidden="true"
         />
-        <div
-          className="animate-pulse rounded"
-          style={{ height: '3rem', width: '100%', background: 'var(--border)' }}
-          aria-hidden="true"
-        />
-        <div className="grid grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+
+        {/* Filter shimmer */}
+        <div className="flex gap-2">
+          {[80, 64, 72, 60].map((w, i) => (
             <div
               key={i}
-              className="animate-pulse rounded"
-              style={{ height: '6rem', background: 'var(--border)' }}
+              className="animate-pulse rounded-full"
+              style={{ height: '30px', width: `${w}px`, background: 'var(--border)' }}
               aria-hidden="true"
             />
           ))}
         </div>
+
+        {/* KPI shimmer */}
+        <div className="grid grid-cols-2 gap-3 kpi-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="animate-pulse rounded-3xl"
+              style={{ height: '90px', background: 'var(--border)' }}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+
+        {/* Chart shimmer */}
         <div
-          className="animate-pulse rounded"
-          style={{ height: '16rem', width: '100%', background: 'var(--border)' }}
+          className="animate-pulse rounded-2xl"
+          style={{ height: '280px', width: '100%', background: 'var(--border)' }}
           aria-hidden="true"
         />
       </div>
@@ -199,7 +227,7 @@ export default function HomePage(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <div className="max-w-4xl mx-auto px-4 pt-6 pb-2">
+      <div className="max-w-5xl mx-auto px-4 pt-8 pb-2">
         <UploadZone
           onParsed={handleParsed}
           onError={handleUploadError}
@@ -208,22 +236,22 @@ export default function HomePage(): JSX.Element {
 
         {uploadError !== null && (
           <div
-            className="mt-3 flex items-start justify-between gap-2 p-3 rounded-lg text-sm"
+            className="mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
             style={{
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#991b1b',
+              background: 'var(--accent-negative-subtle)',
+              border: '1px solid rgba(190, 18, 60, 0.2)',
+              color: 'var(--accent-negative)',
             }}
             role="alert"
             data-testid="upload-error-alert"
           >
-            <span>{uploadError}</span>
+            <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{uploadError}</span>
             <button
               type="button"
               onClick={handleDismissUploadError}
               aria-label="Dismiss error"
               className="shrink-0 font-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
               data-testid="dismiss-upload-error"
             >
               ×
@@ -233,22 +261,22 @@ export default function HomePage(): JSX.Element {
 
         {analyseError !== null && (
           <div
-            className="mt-3 p-3 rounded-lg text-sm flex items-start justify-between gap-2"
+            className="mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
             style={{
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#991b1b',
+              background: 'var(--accent-negative-subtle)',
+              border: '1px solid rgba(190, 18, 60, 0.2)',
+              color: 'var(--accent-negative)',
             }}
             role="alert"
             data-testid="analyse-error-alert"
           >
-            <span>{analyseError}</span>
+            <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{analyseError}</span>
             <button
               type="button"
               onClick={handleDismissAnalyseError}
               aria-label="Dismiss error"
               className="shrink-0 font-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
               data-testid="dismiss-analyse-error"
             >
               ×

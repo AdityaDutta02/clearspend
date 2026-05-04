@@ -29,14 +29,6 @@ function formatCardLabel(card: CardDescriptor): string {
   return parts.join(' ')
 }
 
-const PILL_CLASS = 'px-3 py-1.5 text-sm rounded-full font-medium cursor-pointer border whitespace-nowrap select-none inline-flex items-center'
-
-function pillStyle(active: boolean): Record<string, string> {
-  return active
-    ? { background: 'var(--primary)', color: '#ffffff', borderColor: 'var(--primary)' }
-    : { background: '#ffffff', color: 'var(--muted)', borderColor: 'var(--border)' }
-}
-
 export function FilterBar({ availableMonths, availableBanks, availableCards, filter, onChange }: FilterBarProps): JSX.Element {
   const visibleCards = filter.bank !== null
     ? availableCards.filter((c) => c.bank === filter.bank)
@@ -80,13 +72,13 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
   )
 
   return (
-    <div className="flex flex-col gap-3" role="group" aria-label="Dashboard filters">
+    <div className="flex flex-col gap-2" role="group" aria-label="Dashboard filters">
+
       {/* Month pills */}
-      <div className="filter-bar-scroll flex gap-2 overflow-x-auto pb-1">
+      <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
         <button
           type="button"
-          className={PILL_CLASS}
-          style={pillStyle(filter.month === null)}
+          className={`pill ${filter.month === null ? 'pill-active' : 'pill-inactive'}`}
           aria-pressed={filter.month === null}
           data-testid="month-all"
           onClick={handleMonthAll}
@@ -97,8 +89,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
           <button
             key={month}
             type="button"
-            className={PILL_CLASS}
-            style={pillStyle(filter.month === month)}
+            className={`pill ${filter.month === month ? 'pill-active' : 'pill-inactive'}`}
             aria-pressed={filter.month === month}
             data-testid={`month-filter-${month}`}
             data-month={month}
@@ -110,11 +101,10 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
       </div>
 
       {/* Bank pills */}
-      <div className="filter-bar-scroll flex gap-2 overflow-x-auto pb-1">
+      <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
         <button
           type="button"
-          className={PILL_CLASS}
-          style={pillStyle(filter.bank === null)}
+          className={`pill ${filter.bank === null ? 'pill-active' : 'pill-inactive'}`}
           aria-pressed={filter.bank === null}
           data-testid="bank-all"
           onClick={handleBankAll}
@@ -125,8 +115,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
           <button
             key={bank}
             type="button"
-            className={PILL_CLASS}
-            style={pillStyle(filter.bank === bank && filter.statement_id === null)}
+            className={`pill ${filter.bank === bank && filter.statement_id === null ? 'pill-active' : 'pill-inactive'}`}
             aria-pressed={filter.bank === bank && filter.statement_id === null}
             data-testid={`bank-filter-${bank}`}
             data-bank={bank}
@@ -139,11 +128,10 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
 
       {/* Card pills */}
       {availableCards.length > 0 && (
-        <div className="filter-bar-scroll flex gap-2 overflow-x-auto pb-1">
+        <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
           <button
             type="button"
-            className={PILL_CLASS}
-            style={pillStyle(filter.statement_id === null)}
+            className={`pill ${filter.statement_id === null ? 'pill-active' : 'pill-inactive'}`}
             aria-pressed={filter.statement_id === null}
             data-testid="card-all"
             onClick={handleCardAll}
@@ -154,8 +142,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
             <button
               key={card.statement_id}
               type="button"
-              className={PILL_CLASS}
-              style={pillStyle(filter.statement_id === card.statement_id)}
+              className={`pill ${filter.statement_id === card.statement_id ? 'pill-active' : 'pill-inactive'}`}
               aria-pressed={filter.statement_id === card.statement_id}
               data-testid={`card-filter-${card.statement_id}`}
               data-statement-id={card.statement_id}
@@ -167,6 +154,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
           ))}
         </div>
       )}
+
     </div>
   )
 }

@@ -18,7 +18,7 @@ const CATEGORY_COLORS: Record<CategorySlug, string> = {
   entertainment: '#ec4899',
   health: '#14b8a6',
   travel: '#f59e0b',
-  others: '#6b7280',
+  others: '#94a3b8',
 }
 
 const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
@@ -35,11 +35,11 @@ const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
 }
 
 const SVG_WIDTH = 600
-const SVG_HEIGHT = 240
-const PAD_LEFT = 60
-const PAD_RIGHT = 20
-const PAD_TOP = 20
-const PAD_BOTTOM = 40
+const SVG_HEIGHT = 220
+const PAD_LEFT = 56
+const PAD_RIGHT = 16
+const PAD_TOP = 16
+const PAD_BOTTOM = 36
 
 function formatMonth(yyyyMm: string): string {
   const [year, month] = yyyyMm.split('-').map(Number)
@@ -63,7 +63,7 @@ function formatYAxisLabel(amount: number): string {
 function ShimmerBlock(): JSX.Element {
   return (
     <div
-      className="animate-pulse rounded"
+      className="animate-pulse rounded-xl"
       style={{ height: '200px', width: '100%', background: 'var(--border)' }}
       aria-hidden="true"
       data-testid="shimmer-block"
@@ -116,35 +116,63 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
 
   const maxTotal = data.length > 0 ? Math.max(...data.map((d) => d.total)) : 0
 
-  const barWidth = data.length > 0 ? (availableWidth / data.length) * 0.6 : 0
+  const barWidth = data.length > 0 ? (availableWidth / data.length) * 0.52 : 0
   const slotWidth = data.length > 0 ? availableWidth / data.length : 0
 
   const yTicks = maxTotal > 0 ? [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(f * maxTotal)) : [0]
 
-  // Collect all categories present across all months for the legend
   const presentSlugs = Array.from(
-    new Set(data.flatMap((d) => Object.keys(d.categories) as CategorySlug[])),
+    new Set(data.flatMap((d) => Object.keys(d.categories ?? {}) as CategorySlug[])),
   ).sort((a, b) => {
-    const totA = data.reduce((s, d) => s + (d.categories[a] ?? 0), 0)
-    const totB = data.reduce((s, d) => s + (d.categories[b] ?? 0), 0)
+    const totA = data.reduce((s, d) => s + ((d.categories ?? {})[a] ?? 0), 0)
+    const totB = data.reduce((s, d) => s + ((d.categories ?? {})[b] ?? 0), 0)
     return totB - totA
   })
 
   return (
     <div className="card" style={{ minHeight: '280px' }} data-testid="spend-trend-chart">
-      <p className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>
-        Spend Trend
-      </p>
+
+      {/* Card header */}
+      <div style={{ marginBottom: '16px' }}>
+        <p
+          style={{
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: 'var(--muted)',
+            marginBottom: '4px',
+          }}
+        >
+          Over time
+        </p>
+        <p
+          style={{
+            fontSize: '1rem',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: 'var(--text)',
+          }}
+        >
+          Spend Trend
+        </p>
+      </div>
 
       {/* Legend */}
       {!isLoading && presentSlugs.length > 0 && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3">
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-4">
           {presentSlugs.map((slug) => (
-            <div key={slug} className="flex items-center gap-1">
+            <div key={slug} className="flex items-center gap-1.5">
               <div
-                style={{ width: 8, height: 8, borderRadius: 2, background: CATEGORY_COLORS[slug], flexShrink: 0 }}
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: CATEGORY_COLORS[slug],
+                  flexShrink: 0,
+                }}
               />
-              <span style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>
+              <span style={{ fontSize: '0.62rem', fontWeight: 600, color: 'var(--muted)', letterSpacing: '0.01em' }}>
                 {CATEGORY_DISPLAY_NAMES[slug]}
               </span>
             </div>
@@ -158,7 +186,7 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
         <div
           style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <p style={{ color: 'var(--muted)' }}>No data available</p>
+          <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No data available</p>
         </div>
       ) : (
         <svg
@@ -167,7 +195,7 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
           aria-label="Spend trend stacked bar chart"
           role="img"
         >
-          {/* Y-axis grid lines and labels */}
+          {/* Y-axis grid lines */}
           {yTicks.map((tick) => {
             const y = PAD_TOP + availableHeight - (maxTotal > 0 ? (tick / maxTotal) * availableHeight : 0)
             return (
@@ -179,14 +207,17 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
                   y2={y}
                   stroke="var(--border)"
                   strokeWidth={1}
+                  strokeDasharray={tick === 0 ? undefined : '3 4'}
                 />
                 <text
-                  x={PAD_LEFT - 6}
+                  x={PAD_LEFT - 8}
                   y={y}
                   textAnchor="end"
                   dominantBaseline="middle"
-                  fontSize={10}
+                  fontSize={9}
                   fill="var(--muted)"
+                  fontFamily="'Plus Jakarta Sans', system-ui"
+                  fontWeight={500}
                 >
                   {formatYAxisLabel(tick)}
                 </text>
@@ -198,14 +229,13 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
           {data.map((point, index) => {
             const slotX = PAD_LEFT + index * slotWidth
             const barX = slotX + (slotWidth - barWidth) / 2
-            const segments = buildSegments(point.categories, point.total, availableHeight, maxTotal)
+            const segments = buildSegments(point.categories ?? {}, point.total, availableHeight, maxTotal)
 
             return (
               <g key={point.month} data-testid={`bar-${point.month}`}>
                 {segments.map((seg, si) => {
                   const isTop = si === 0
-                  const isBottom = si === segments.length - 1
-                  const rx = isTop ? 4 : 0
+                  const rx = isTop ? 3 : 0
                   const h = Math.max(seg.height, 1)
                   return (
                     <rect
@@ -218,17 +248,19 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
                       ry={isTop ? rx : 0}
                       fill={CATEGORY_COLORS[seg.slug]}
                       aria-label={`${CATEGORY_DISPLAY_NAMES[seg.slug]} ${formatYAxisLabel(seg.amount)}`}
-                      style={isBottom ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 } : undefined}
                     />
                   )
                 })}
+
                 {/* X-axis label */}
                 <text
                   x={slotX + slotWidth / 2}
-                  y={SVG_HEIGHT - PAD_BOTTOM + 16}
+                  y={SVG_HEIGHT - PAD_BOTTOM + 14}
                   textAnchor="middle"
-                  fontSize={10}
+                  fontSize={9}
                   fill="var(--muted)"
+                  fontFamily="'Plus Jakarta Sans', system-ui"
+                  fontWeight={500}
                 >
                   {formatMonth(point.month)}
                 </text>
@@ -242,7 +274,7 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
             y1={PAD_TOP + availableHeight}
             x2={SVG_WIDTH - PAD_RIGHT}
             y2={PAD_TOP + availableHeight}
-            stroke="var(--border)"
+            stroke="var(--border-medium)"
             strokeWidth={1}
           />
         </svg>
