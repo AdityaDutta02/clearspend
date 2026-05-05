@@ -203,11 +203,11 @@ export default function HomePage(): JSX.Element {
         </div>
 
         {/* KPI shimmer */}
-        <div className="grid grid-cols-2 gap-3 kpi-grid">
+        <div className="kpi-row">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="animate-pulse rounded-3xl"
+              className="animate-pulse rounded-2xl"
               style={{ height: '90px', background: 'var(--border)' }}
               aria-hidden="true"
             />
@@ -227,7 +227,7 @@ export default function HomePage(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <div className="max-w-5xl mx-auto px-4 pt-8 pb-2">
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
         <UploadZone
           onParsed={handleParsed}
           onError={handleUploadError}
