@@ -48,7 +48,7 @@ function Pill({ layoutId, isActive, onClick, testId, children }: PillProps): JSX
       onClick={onClick}
       style={{
         color: isActive ? '#ffffff' : 'var(--muted)',
-        background: isActive ? 'transparent' : 'rgba(12, 30, 22, 0.04)',
+        background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
         transition: 'color 0.22s cubic-bezier(0.32,0.72,0,1), background 0.22s cubic-bezier(0.32,0.72,0,1)',
       }}
     >
@@ -65,7 +65,7 @@ function Pill({ layoutId, isActive, onClick, testId, children }: PillProps): JSX
               inset: 0,
               borderRadius: '999px',
               background: 'var(--primary)',
-              boxShadow: '0 2px 10px rgba(4, 120, 87, 0.35)',
+              boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
               zIndex: -1,
             }}
           />
@@ -158,7 +158,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
                     inset: 0,
                     borderRadius: '999px',
                     background: 'var(--primary)',
-                    boxShadow: '0 2px 10px rgba(4, 120, 87, 0.35)',
+                    boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
                     zIndex: -1,
                   }}
                 />
@@ -192,7 +192,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
               onClick={handleBankClick}
               style={{
                 color: isActive ? '#ffffff' : 'var(--muted)',
-                background: isActive ? 'transparent' : 'rgba(12, 30, 22, 0.04)',
+                background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
               }}
             >
               <AnimatePresence>
@@ -208,7 +208,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
                       inset: 0,
                       borderRadius: '999px',
                       background: 'var(--primary)',
-                      boxShadow: '0 2px 10px rgba(4, 120, 87, 0.35)',
+                      boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
                       zIndex: -1,
                     }}
                   />
@@ -245,7 +245,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
                 onClick={handleCardClick}
                 style={{
                   color: isActive ? '#ffffff' : 'var(--muted)',
-                  background: isActive ? 'transparent' : 'rgba(12, 30, 22, 0.04)',
+                  background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
                 }}
               >
                 <AnimatePresence>
@@ -261,7 +261,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
                         inset: 0,
                         borderRadius: '999px',
                         background: 'var(--primary)',
-                        boxShadow: '0 2px 10px rgba(4, 120, 87, 0.35)',
+                        boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
                         zIndex: -1,
                       }}
                     />
