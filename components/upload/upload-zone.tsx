@@ -237,7 +237,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
       style={{
         padding: '2px',
         borderRadius: '1.25rem',
-        background: isDragOver ? 'var(--primary-subtle)' : 'rgba(12, 30, 22, 0.025)',
+        background: isDragOver ? 'var(--primary-subtle)' : 'rgba(15, 23, 42, 0.02)',
         border: isDragOver
           ? '1.5px solid var(--primary-border)'
           : '1.5px dashed var(--border-medium)',
@@ -258,7 +258,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         style={{
-          background: isDragOver ? 'rgba(4,120,87,0.04)' : 'var(--surface)',
+          background: isDragOver ? 'rgba(37, 99, 235, 0.04)' : 'var(--surface)',
           borderRadius: 'calc(1.25rem - 2px)',
           minHeight: '148px',
           cursor: isPasswordPrompt ? 'default' : disabled || isLoading ? 'not-allowed' : 'pointer',
