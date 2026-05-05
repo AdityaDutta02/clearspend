@@ -53,6 +53,7 @@
 /* ─── Base ─────────────────────────────────────────── */
 html,
 body {
+  min-height: 100vh;
   min-height: 100dvh;
   background: var(--bg);
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
