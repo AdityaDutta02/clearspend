@@ -1,3 +1,15 @@
+'use client'
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  type TooltipProps,
+} from 'recharts'
 import type { Analysis, CategorySlug } from '@/types'
 
 export interface CategoryChartProps {
@@ -33,7 +45,9 @@ const CATEGORY_COLORS: Record<CategorySlug, string> = {
 
 interface CategoryTotal {
   slug: CategorySlug
+  name: string
   total: number
+  share: number
 }
 
 function aggregateCategories(analyses: Analysis[]): CategoryTotal[] {
@@ -46,10 +60,19 @@ function aggregateCategories(analyses: Analysis[]): CategoryTotal[] {
     }
   }
 
-  return Array.from(totals.entries())
+  const rows = Array.from(totals.entries())
     .map(([slug, total]) => ({ slug, total }))
     .filter(({ total }) => total > 0)
     .sort((a, b) => b.total - a.total)
+
+  const grand = rows.reduce((s, r) => s + r.total, 0)
+
+  return rows.map(({ slug, total }) => ({
+    slug,
+    name: CATEGORY_DISPLAY_NAMES[slug],
+    total,
+    share: grand > 0 ? Math.round((total / grand) * 100) : 0,
+  }))
 }
 
 function formatInrShort(amount: number): string {
@@ -63,24 +86,64 @@ function formatInrShort(amount: number): string {
   return `₹${amount}`
 }
 
+function CustomTooltip({ active, payload }: TooltipProps<number, string>): JSX.Element | null {
+  if (!active || !payload?.length) return null
+  const item = payload[0]
+  const data = item.payload as CategoryTotal
+
+  return (
+    <div
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border-medium)',
+        borderRadius: '12px',
+        padding: '12px 14px',
+        boxShadow: 'var(--shadow-elevated)',
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: CATEGORY_COLORS[data.slug],
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)' }}>
+          {data.name}
+        </span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '20px' }}>
+        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatInrShort(data.total)}
+        </span>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted)' }}>
+          {data.share}% of total
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function ShimmerBlock(): JSX.Element {
   return (
-    <div className="flex flex-col gap-5" aria-hidden="true" data-testid="category-shimmer">
+    <div className="flex flex-col gap-4" aria-hidden="true" data-testid="category-shimmer">
       {[80, 65, 52, 40, 30].map((w, i) => (
-        <div key={i} className="flex flex-col gap-2">
-          <div className="flex justify-between">
-            <div
-              className="animate-pulse rounded-md"
-              style={{ height: '13px', width: `${w * 0.7}%`, background: 'var(--border)' }}
-            />
-            <div
-              className="animate-pulse rounded-md"
-              style={{ height: '13px', width: '48px', background: 'var(--border)' }}
-            />
-          </div>
+        <div key={i} className="flex items-center gap-3">
+          <div
+            className="animate-pulse rounded"
+            style={{ height: '12px', width: '80px', background: 'var(--border)', flexShrink: 0 }}
+          />
           <div
             className="animate-pulse rounded-full"
-            style={{ height: '6px', width: `${w}%`, background: 'var(--border)' }}
+            style={{ height: '20px', width: `${w}%`, background: 'var(--border)', borderRadius: '4px' }}
+          />
+          <div
+            className="animate-pulse rounded"
+            style={{ height: '12px', width: '40px', background: 'var(--border)', flexShrink: 0 }}
           />
         </div>
       ))}
@@ -90,16 +153,14 @@ function ShimmerBlock(): JSX.Element {
 
 export function CategoryChart({ analyses, isLoading }: CategoryChartProps): JSX.Element {
   const categories = aggregateCategories(analyses)
-  const grandTotal = categories.reduce((s, c) => s + c.total, 0)
-  const maxTotal = categories.length > 0 ? categories[0].total : 0
 
   return (
-    <div className="card" data-testid="category-chart">
-      {/* Card header */}
+    <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="category-chart">
+
       <div style={{ marginBottom: '20px' }}>
         <p
           style={{
-            fontSize: '0.65rem',
+            fontSize: '0.6rem',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
@@ -126,61 +187,58 @@ export function CategoryChart({ analyses, isLoading }: CategoryChartProps): JSX.
       ) : categories.length === 0 ? (
         <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No spend data available</p>
       ) : (
-        <ul className="flex flex-col gap-4" role="list">
-          {categories.map(({ slug, total }) => {
-            const widthPct = maxTotal > 0 ? (total / maxTotal) * 100 : 0
-            const sharePct = grandTotal > 0 ? Math.round((total / grandTotal) * 100) : 0
-            const color = CATEGORY_COLORS[slug]
-
-            return (
-              <li key={slug} data-testid={`category-${slug}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        background: color,
-                        flexShrink: 0,
-                        display: 'inline-block',
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontSize: '0.825rem',
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
-                      {CATEGORY_DISPLAY_NAMES[slug]}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', flexShrink: 0 }}>
-                    <span
-                      className="tabular"
-                      style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text)' }}
-                    >
-                      {formatInrShort(total)}
-                    </span>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--muted)' }}>
-                      {sharePct}%
-                    </span>
-                  </div>
-                </div>
-
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${widthPct}%`, background: color }}
-                    aria-label={`${CATEGORY_DISPLAY_NAMES[slug]}: ${sharePct}% of total`}
+        <div style={{ flex: 1, minHeight: '200px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              layout="vertical"
+              data={categories}
+              margin={{ top: 0, right: 52, bottom: 0, left: 0 }}
+              barCategoryGap="30%"
+            >
+              <XAxis type="number" hide />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={82}
+                tick={{
+                  fontSize: 11,
+                  fill: 'var(--text-secondary)',
+                  fontFamily: "'Plus Jakarta Sans', system-ui",
+                  fontWeight: 500,
+                }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'rgba(12, 30, 22, 0.04)', radius: 4 }}
+              />
+              <Bar
+                dataKey="total"
+                radius={[0, 4, 4, 0]}
+                isAnimationActive
+                animationDuration={600}
+                animationEasing="ease-out"
+                label={{
+                  position: 'right',
+                  formatter: (v: number) => formatInrShort(v),
+                  fontSize: 10,
+                  fontWeight: 700,
+                  fill: 'var(--muted)',
+                  fontFamily: "'Plus Jakarta Sans', system-ui",
+                }}
+              >
+                {categories.map((entry) => (
+                  <Cell
+                    key={entry.slug}
+                    fill={CATEGORY_COLORS[entry.slug]}
+                    data-testid={`category-${entry.slug}`}
                   />
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

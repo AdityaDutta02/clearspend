@@ -1,3 +1,15 @@
+'use client'
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  type TooltipProps,
+} from 'recharts'
 import type { Analysis } from '@/types'
 
 export interface UpiChartProps {
@@ -7,7 +19,9 @@ export interface UpiChartProps {
 
 interface MerchantTotal {
   name: string
+  shortName: string
   total: number
+  rank: number
 }
 
 function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
@@ -20,9 +34,15 @@ function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
   }
 
   return Array.from(totals.entries())
-    .map(([name, total]) => ({ name, total }))
+    .map(([name, total]) => ({
+      name,
+      shortName: name.length > 12 ? name.slice(0, 11) + '…' : name,
+      total,
+      rank: 0,
+    }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5)
+    .map((m, i) => ({ ...m, rank: i + 1 }))
 }
 
 function formatInrShort(amount: number): string {
@@ -36,24 +56,63 @@ function formatInrShort(amount: number): string {
   return `₹${amount}`
 }
 
+function CustomTooltip({ active, payload }: TooltipProps<number, string>): JSX.Element | null {
+  if (!active || !payload?.length) return null
+  const item = payload[0]
+  const data = item.payload as MerchantTotal
+
+  return (
+    <div
+      style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border-medium)',
+        borderRadius: '12px',
+        padding: '12px 14px',
+        boxShadow: 'var(--shadow-elevated)',
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+      }}
+    >
+      <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
+        {data.name}
+      </p>
+      <p
+        style={{
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          color: 'var(--primary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {formatInrShort(data.total)}
+      </p>
+    </div>
+  )
+}
+
+function getBarColor(rank: number): string {
+  if (rank === 1) return '#047857'
+  const opacity = 0.35 + (1 - rank / 5) * 0.45
+  return `rgba(16, 185, 129, ${opacity})`
+}
+
 function ShimmerBlock(): JSX.Element {
   return (
     <div className="flex flex-col gap-5" aria-hidden="true" data-testid="shimmer-block">
-      {[72, 58, 45, 35, 26].map((w, i) => (
+      {[85, 68, 52, 40, 28].map((w, i) => (
         <div key={i} className="flex flex-col gap-2">
           <div className="flex justify-between">
             <div
               className="animate-pulse rounded-md"
-              style={{ height: '13px', width: `${w * 0.8}%`, background: 'var(--border)' }}
+              style={{ height: '12px', width: `${w * 0.7}%`, background: 'var(--border)' }}
             />
             <div
               className="animate-pulse rounded-md"
-              style={{ height: '13px', width: '44px', background: 'var(--border)' }}
+              style={{ height: '12px', width: '44px', background: 'var(--border)' }}
             />
           </div>
           <div
             className="animate-pulse rounded-full"
-            style={{ height: '6px', width: `${w}%`, background: 'var(--border)' }}
+            style={{ height: '5px', width: `${w}%`, background: 'var(--border)' }}
           />
         </div>
       ))}
@@ -63,15 +122,14 @@ function ShimmerBlock(): JSX.Element {
 
 export function UpiChart({ analyses, isLoading }: UpiChartProps): JSX.Element {
   const merchants = aggregateTopMerchants(analyses)
-  const maxTotal = merchants.length > 0 ? merchants[0].total : 0
 
   return (
-    <div className="card" data-testid="upi-chart">
-      {/* Card header */}
+    <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="upi-chart">
+
       <div style={{ marginBottom: '20px' }}>
         <p
           style={{
-            fontSize: '0.65rem',
+            fontSize: '0.6rem',
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
@@ -98,67 +156,55 @@ export function UpiChart({ analyses, isLoading }: UpiChartProps): JSX.Element {
       ) : merchants.length === 0 ? (
         <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No UPI transactions found</p>
       ) : (
-        <ul className="flex flex-col gap-4" role="list">
-          {merchants.map((merchant, index) => {
-            const widthPct = maxTotal > 0 ? (merchant.total / maxTotal) * 100 : 0
-            const rank = index + 1
-
-            return (
-              <li key={merchant.name} data-testid={`upi-merchant-${merchant.name}`}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '7px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <span
-                      style={{
-                        fontSize: '0.6rem',
-                        fontWeight: 800,
-                        color: rank === 1 ? 'var(--primary)' : 'var(--muted)',
-                        opacity: rank === 1 ? 1 : 0.6,
-                        letterSpacing: '0.04em',
-                        minWidth: '14px',
-                        textAlign: 'right',
-                      }}
-                    >
-                      {rank}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.825rem',
-                        fontWeight: 600,
-                        color: 'var(--text)',
-                        letterSpacing: '-0.01em',
-                        maxWidth: '160px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {merchant.name}
-                    </span>
-                  </div>
-                  <span
-                    className="tabular"
-                    style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}
-                  >
-                    {formatInrShort(merchant.total)}
-                  </span>
-                </div>
-
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${widthPct}%`,
-                      background: rank === 1
-                        ? 'var(--primary-light)'
-                        : `rgba(16, 185, 129, ${0.35 + (1 - rank / 5) * 0.45})`,
-                    }}
-                    aria-label={`${merchant.name}: ${widthPct.toFixed(0)}% of top merchant`}
+        <div style={{ flex: 1, minHeight: '200px' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={merchants}
+              margin={{ top: 4, right: 4, left: 0, bottom: 4 }}
+              barCategoryGap="35%"
+            >
+              <XAxis
+                dataKey="shortName"
+                tick={{
+                  fontSize: 10,
+                  fill: 'var(--muted)',
+                  fontFamily: "'Plus Jakarta Sans', system-ui",
+                  fontWeight: 500,
+                }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis hide />
+              <Tooltip
+                content={<CustomTooltip />}
+                cursor={{ fill: 'rgba(12, 30, 22, 0.04)', radius: 6 }}
+              />
+              <Bar
+                dataKey="total"
+                radius={[5, 5, 0, 0]}
+                isAnimationActive
+                animationDuration={600}
+                animationEasing="ease-out"
+                label={{
+                  position: 'top',
+                  formatter: (v: number) => formatInrShort(v),
+                  fontSize: 9,
+                  fontWeight: 700,
+                  fill: 'var(--muted)',
+                  fontFamily: "'Plus Jakarta Sans', system-ui",
+                }}
+              >
+                {merchants.map((entry) => (
+                  <Cell
+                    key={entry.name}
+                    fill={getBarColor(entry.rank)}
+                    data-testid={`upi-merchant-${entry.name}`}
                   />
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   )

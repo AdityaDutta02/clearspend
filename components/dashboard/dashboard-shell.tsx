@@ -1,3 +1,6 @@
+'use client'
+
+import { motion } from 'framer-motion'
 import type { DashboardData } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
 import {
@@ -22,6 +25,23 @@ export interface DashboardShellProps {
   isLoading: boolean
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.05 },
+  },
+}
+
+const rowVariants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.52, ease: [0.32, 0.72, 0, 1] as [number, number, number, number] },
+  },
+}
+
 export function DashboardShell({
   data,
   filter,
@@ -41,7 +61,7 @@ export function DashboardShell({
       style={{ background: 'var(--bg)' }}
       data-testid="dashboard-shell"
     >
-      <div className="max-w-5xl mx-auto px-4 py-10 flex flex-col gap-7">
+      <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-6">
 
         {/* ── Header ── */}
         <div className="reveal">
@@ -50,13 +70,13 @@ export function DashboardShell({
             style={{
               background: 'var(--primary-subtle)',
               color: 'var(--primary)',
-              marginBottom: '14px',
+              marginBottom: '12px',
             }}
           >
             <span
               style={{
-                width: 6,
-                height: 6,
+                width: 5,
+                height: 5,
                 borderRadius: '50%',
                 background: 'var(--primary)',
                 flexShrink: 0,
@@ -67,7 +87,7 @@ export function DashboardShell({
 
           <h1
             style={{
-              fontSize: 'clamp(1.9rem, 5vw, 3rem)',
+              fontSize: 'clamp(1.8rem, 5vw, 2.75rem)',
               fontWeight: 800,
               letterSpacing: '-0.04em',
               lineHeight: 1.0,
@@ -79,9 +99,9 @@ export function DashboardShell({
 
           <p
             style={{
-              fontSize: '0.9rem',
+              fontSize: '0.875rem',
               color: 'var(--muted)',
-              marginTop: '8px',
+              marginTop: '6px',
               fontWeight: 400,
               letterSpacing: '-0.01em',
             }}
@@ -101,26 +121,32 @@ export function DashboardShell({
           />
         </div>
 
-        {/* ── KPI row ── */}
-        <div className="reveal reveal-d2">
-          <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
-        </div>
+        {/* ── Dashboard grid ── */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-4"
+        >
 
-        {/* ── Hero: Spend Trend (full width) ── */}
-        <div className="reveal reveal-d3">
-          <SpendTrendChart data={trendData} isLoading={isLoading} />
-        </div>
+          {/* Row 1: KPIs + Trend Chart */}
+          <motion.div variants={rowVariants} className="bento-main">
+            <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
+            <SpendTrendChart data={trendData} isLoading={isLoading} />
+          </motion.div>
 
-        {/* ── Bento row: Category (40%) + UPI (60%) ── */}
-        <div className="grid grid-cols-1 gap-5 reveal reveal-d4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-          <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
-          <UpiChart analyses={filteredAnalyses} isLoading={isLoading} />
-        </div>
+          {/* Row 2: Category + UPI */}
+          <motion.div variants={rowVariants} className="bento-secondary">
+            <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
+            <UpiChart analyses={filteredAnalyses} isLoading={isLoading} />
+          </motion.div>
 
-        {/* ── Insights (full width) ── */}
-        <div className="reveal reveal-d5">
-          <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
-        </div>
+          {/* Row 3: Insights */}
+          <motion.div variants={rowVariants}>
+            <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
+          </motion.div>
+
+        </motion.div>
 
       </div>
     </main>

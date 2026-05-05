@@ -1,3 +1,6 @@
+'use client'
+
+import { motion } from 'framer-motion'
 import type { Analysis } from '@/types'
 
 export interface InsightsStripProps {
@@ -23,7 +26,7 @@ function collectInsights(analyses: Analysis[]): string[] {
   return result
 }
 
-function SparkleIcon(): JSX.Element {
+function InsightIcon(): JSX.Element {
   return (
     <svg
       width="14"
@@ -31,14 +34,14 @@ function SparkleIcon(): JSX.Element {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.5"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ flexShrink: 0 }}
     >
-      <path d="M12 3v3m0 12v3M3 12h3m12 0h3" />
-      <path d="M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6l2.1-2.1" />
+      <path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6L15 18H9l-.3-2.9A7 7 0 0 1 12 2z" />
+      <line x1="9" y1="21" x2="15" y2="21" />
+      <line x1="10" y1="21" x2="14" y2="21" strokeWidth="2" />
     </svg>
   )
 }
@@ -46,13 +49,13 @@ function SparkleIcon(): JSX.Element {
 function ShimmerStrip(): JSX.Element {
   return (
     <div className="flex gap-3 overflow-x-auto pb-1" aria-hidden="true" data-testid="shimmer-block">
-      {[260, 220, 280].map((w, i) => (
+      {[260, 220, 280, 240].map((w, i) => (
         <div
           key={i}
           className="animate-pulse rounded-2xl"
           style={{
             minWidth: `${w}px`,
-            height: '80px',
+            height: '90px',
             background: 'var(--border)',
             flexShrink: 0,
           }}
@@ -67,8 +70,19 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
 
   return (
     <div className="card" data-testid="insights-strip">
-      {/* Card header */}
       <div style={{ marginBottom: '18px' }}>
+        <p
+          style={{
+            fontSize: '0.6rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: 'var(--muted)',
+            marginBottom: '4px',
+          }}
+        >
+          Powered by AI
+        </p>
         <p
           style={{
             fontSize: '1rem',
@@ -77,51 +91,58 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
             color: 'var(--text)',
           }}
         >
-          AI Insights
+          Insights
         </p>
       </div>
 
       {isLoading ? (
         <ShimmerStrip />
       ) : insights.length === 0 ? (
-        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No insights available yet</p>
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
+          No insights yet — upload a statement to get started.
+        </p>
       ) : (
         <div
           className="flex gap-3 overflow-x-auto pb-1"
           role="list"
           style={{ scrollbarWidth: 'none' }}
         >
-          {insights.map((insight) => (
-            <div
+          {insights.map((insight, i) => (
+            <motion.div
               key={insight}
               role="listitem"
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{
+                delay: i * 0.05,
+                duration: 0.4,
+                ease: [0.32, 0.72, 0, 1],
+              }}
               style={{
                 minWidth: '248px',
-                maxWidth: '312px',
+                maxWidth: '320px',
                 flexShrink: 0,
-                padding: '2px',
-                background: 'rgba(11, 25, 41, 0.03)',
-                border: '1px solid rgba(11, 25, 41, 0.06)',
-                borderRadius: '1rem',
               }}
               data-testid="insight-card"
             >
               <div
                 style={{
-                  background: 'var(--surface)',
-                  borderRadius: 'calc(1rem - 2px)',
+                  background: 'var(--surface-raised)',
+                  borderRadius: '14px',
                   padding: '14px 16px',
                   display: 'flex',
-                  gap: '10px',
+                  gap: '12px',
                   alignItems: 'flex-start',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,1)',
+                  border: '1px solid var(--border)',
+                  borderLeft: '3px solid var(--primary-light)',
                   height: '100%',
+                  transition: 'box-shadow 0.22s cubic-bezier(0.32,0.72,0,1), transform 0.22s cubic-bezier(0.32,0.72,0,1)',
                 }}
               >
                 <div
                   style={{
-                    width: 28,
-                    height: 28,
+                    width: 26,
+                    height: 26,
                     borderRadius: '8px',
                     background: 'var(--primary-subtle)',
                     display: 'flex',
@@ -129,14 +150,15 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
                     justifyContent: 'center',
                     flexShrink: 0,
                     color: 'var(--primary)',
+                    marginTop: '1px',
                   }}
                 >
-                  <SparkleIcon />
+                  <InsightIcon />
                 </div>
                 <p
                   style={{
-                    fontSize: '0.8rem',
-                    lineHeight: 1.55,
+                    fontSize: '0.78rem',
+                    lineHeight: 1.6,
                     color: 'var(--text-secondary)',
                     margin: 0,
                     letterSpacing: '-0.005em',
@@ -145,7 +167,7 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
                   {insight}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       )}
