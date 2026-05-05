@@ -1,15 +1,5 @@
 'use client'
 
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Cell,
-  type TooltipProps,
-} from 'recharts'
 import type { Analysis } from '@/types'
 
 export interface UpiChartProps {
@@ -19,9 +9,9 @@ export interface UpiChartProps {
 
 interface MerchantTotal {
   name: string
-  shortName: string
   total: number
   rank: number
+  share: number
 }
 
 function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
@@ -33,16 +23,19 @@ function aggregateTopMerchants(analyses: Analysis[]): MerchantTotal[] {
     }
   }
 
-  return Array.from(totals.entries())
-    .map(([name, total]) => ({
-      name,
-      shortName: name.length > 12 ? name.slice(0, 11) + '…' : name,
-      total,
-      rank: 0,
-    }))
+  const sorted = Array.from(totals.entries())
+    .map(([name, total]) => ({ name, total }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 5)
-    .map((m, i) => ({ ...m, rank: i + 1 }))
+
+  const max = sorted[0]?.total ?? 1
+
+  return sorted.map((m, i) => ({
+    name: m.name,
+    total: m.total,
+    rank: i + 1,
+    share: Math.round((m.total / max) * 100),
+  }))
 }
 
 function formatInrShort(amount: number): string {
@@ -50,70 +43,22 @@ function formatInrShort(amount: number): string {
     const l = amount / 100000
     return `₹${Number.isInteger(l) ? l : l.toFixed(1)}L`
   }
-  if (amount >= 1000) {
-    return `₹${Math.round(amount / 1000)}K`
-  }
+  if (amount >= 1000) return `₹${Math.round(amount / 1000)}K`
   return `₹${amount}`
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>): JSX.Element | null {
-  if (!active || !payload?.length) return null
-  const item = payload[0]
-  const data = item.payload as MerchantTotal
-
-  return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border-medium)',
-        borderRadius: '12px',
-        padding: '12px 14px',
-        boxShadow: 'var(--shadow-elevated)',
-        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-      }}
-    >
-      <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
-        {data.name}
-      </p>
-      <p
-        style={{
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          color: 'var(--primary)',
-          fontVariantNumeric: 'tabular-nums',
-        }}
-      >
-        {formatInrShort(data.total)}
-      </p>
-    </div>
-  )
-}
-
-function getBarColor(rank: number): string {
-  if (rank === 1) return '#047857'
-  const opacity = 0.35 + (1 - rank / 5) * 0.45
-  return `rgba(16, 185, 129, ${opacity})`
-}
+const RANK_COLORS = ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD']
 
 function ShimmerBlock(): JSX.Element {
   return (
-    <div className="flex flex-col gap-5" aria-hidden="true" data-testid="shimmer-block">
-      {[85, 68, 52, 40, 28].map((w, i) => (
+    <div className="flex flex-col gap-4" aria-hidden="true" data-testid="shimmer-block">
+      {[100, 80, 62, 48, 34].map((w, i) => (
         <div key={i} className="flex flex-col gap-2">
           <div className="flex justify-between">
-            <div
-              className="animate-pulse rounded-md"
-              style={{ height: '12px', width: `${w * 0.7}%`, background: 'var(--border)' }}
-            />
-            <div
-              className="animate-pulse rounded-md"
-              style={{ height: '12px', width: '44px', background: 'var(--border)' }}
-            />
+            <div className="animate-pulse rounded-md" style={{ height: '12px', width: `${w * 0.6}%`, background: 'var(--border)' }} />
+            <div className="animate-pulse rounded-md" style={{ height: '12px', width: '44px', background: 'var(--border)' }} />
           </div>
-          <div
-            className="animate-pulse rounded-full"
-            style={{ height: '5px', width: `${w}%`, background: 'var(--border)' }}
-          />
+          <div className="animate-pulse rounded-full" style={{ height: '4px', width: `${w}%`, background: 'var(--border)' }} />
         </div>
       ))}
     </div>
@@ -127,26 +72,10 @@ export function UpiChart({ analyses, isLoading }: UpiChartProps): JSX.Element {
     <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }} data-testid="upi-chart">
 
       <div style={{ marginBottom: '20px' }}>
-        <p
-          style={{
-            fontSize: '0.6rem',
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.12em',
-            color: 'var(--muted)',
-            marginBottom: '4px',
-          }}
-        >
+        <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '4px' }}>
           UPI
         </p>
-        <p
-          style={{
-            fontSize: '1rem',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: 'var(--text)',
-          }}
-        >
+        <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
           Top UPI Merchants
         </p>
       </div>
@@ -156,54 +85,35 @@ export function UpiChart({ analyses, isLoading }: UpiChartProps): JSX.Element {
       ) : merchants.length === 0 ? (
         <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No UPI transactions found</p>
       ) : (
-        <div style={{ flex: 1, minHeight: '200px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={merchants}
-              margin={{ top: 4, right: 4, left: 0, bottom: 4 }}
-              barCategoryGap="35%"
-            >
-              <XAxis
-                dataKey="shortName"
-                tick={{
-                  fontSize: 10,
-                  fill: 'var(--muted)',
-                  fontFamily: "'Plus Jakarta Sans', system-ui",
-                  fontWeight: 500,
-                }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis hide />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{ fill: 'rgba(12, 30, 22, 0.04)', radius: 6 }}
-              />
-              <Bar
-                dataKey="total"
-                radius={[5, 5, 0, 0]}
-                isAnimationActive
-                animationDuration={600}
-                animationEasing="ease-out"
-                label={{
-                  position: 'top',
-                  formatter: (v: number) => formatInrShort(v),
-                  fontSize: 9,
-                  fontWeight: 700,
-                  fill: 'var(--muted)',
-                  fontFamily: "'Plus Jakarta Sans', system-ui",
-                }}
-              >
-                {merchants.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={getBarColor(entry.rank)}
-                    data-testid={`upi-merchant-${entry.name}`}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {merchants.map((m) => (
+            <div key={m.name} data-testid={`upi-merchant-${m.name}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: RANK_COLORS[m.rank - 1] ?? '#94a3b8',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.6rem', fontWeight: 800, color: '#fff', flexShrink: 0,
+                  }}>
+                    {m.rank}
+                  </span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {m.name}
+                  </span>
+                </div>
+                <span className="tabular" style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)', flexShrink: 0, marginLeft: '8px' }}>
+                  {formatInrShort(m.total)}
+                </span>
+              </div>
+              <div className="progress-track">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${m.share}%`, background: RANK_COLORS[m.rank - 1] ?? '#94a3b8', opacity: 0.75 }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
