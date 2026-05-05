@@ -171,7 +171,7 @@ export function ConfirmModal({
             alignItems: 'center',
             justifyContent: 'center',
             padding: '16px',
-            background: 'rgba(12, 30, 22, 0.45)',
+            background: 'rgba(15, 23, 42, 0.4)',
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
           }}
@@ -187,8 +187,8 @@ export function ConfirmModal({
             transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
             style={{
               padding: '2px',
-              background: 'rgba(12, 30, 22, 0.04)',
-              border: '1px solid rgba(12, 30, 22, 0.08)',
+              background: 'rgba(15, 23, 42, 0.04)',
+              border: '1px solid rgba(15, 23, 42, 0.08)',
               borderRadius: '1.5rem',
               width: '100%',
               maxWidth: '460px',
@@ -320,7 +320,7 @@ export function ConfirmModal({
                     cursor: isAnalysing ? 'not-allowed' : 'pointer',
                     opacity: isAnalysing ? 0.75 : 1,
                     transition: 'all 0.2s cubic-bezier(0.32,0.72,0,1)',
-                    boxShadow: isAnalysing ? 'none' : '0 2px 10px rgba(4,120,87,0.35)',
+                    boxShadow: isAnalysing ? 'none' : '0 2px 10px rgba(37, 99, 235, 0.3)',
                   }}
                 >
                   {isAnalysing ? (
