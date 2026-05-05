@@ -211,7 +211,7 @@ export function CategoryChart({ analyses, isLoading }: CategoryChartProps): JSX.
               />
               <Tooltip
                 content={<CustomTooltip />}
-                cursor={{ fill: 'rgba(12, 30, 22, 0.04)', radius: 4 }}
+                cursor={{ fill: 'rgba(15, 23, 42, 0.04)', radius: 4 }}
               />
               <Bar
                 dataKey="total"
