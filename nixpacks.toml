@@ -1,4 +1,7 @@
 providers = []
 
+[build]
+cmd = "npm ci && npm run build"
+
 [start]
 cmd = "node .next/standalone/server.js"
