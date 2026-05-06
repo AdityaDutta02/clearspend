@@ -1,4 +1,4 @@
-import type { BankSlug, CategorySlug, DashboardData, Analysis, Statement } from '@/types'
+import type { BankSlug, CategorySlug, DashboardData, Analysis, Statement, Transaction } from '@/types'
 
 export interface FilterState {
   month: string | null // "YYYY-MM" or null for all
@@ -168,4 +168,17 @@ export function getSpendTrendData(analyses: Analysis[]): ChartPoint[] {
   return Array.from(byMonth.entries())
     .map(([month, { total, categories }]) => ({ month, total, categories }))
     .sort((a, b) => a.month.localeCompare(b.month))
+}
+
+export function getFilteredTransactions(data: DashboardData, filter: FilterState): Transaction[] {
+  const filteredStatements = data.statements.filter((s) => {
+    if (filter.month !== null && s.month !== filter.month) return false
+    if (filter.bank !== null && s.bank !== filter.bank) return false
+    if (filter.statement_id !== null && s.id !== filter.statement_id) return false
+    return true
+  })
+  const statementIds = new Set(filteredStatements.map((s) => s.id))
+  return data.transactions
+    .filter((t) => statementIds.has(t.statement_id))
+    .sort((a, b) => b.date.localeCompare(a.date))
 }
