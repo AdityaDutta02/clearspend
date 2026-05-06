@@ -1,7 +1,6 @@
 'use client'
 
-import { useCallback, type MouseEvent } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useCallback } from 'react'
 import type { BankSlug } from '@/types'
 import type { FilterState, CardDescriptor } from '@/lib/dashboard-data'
 
@@ -30,250 +29,112 @@ function formatCardLabel(card: CardDescriptor): string {
   return parts.join(' ')
 }
 
-interface PillProps {
-  layoutId: string
-  isActive: boolean
-  onClick: () => void
-  testId: string
-  children: React.ReactNode
+const selectStyle: React.CSSProperties = {
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  background: 'rgba(15, 23, 42, 0.05)',
+  border: '1px solid transparent',
+  borderRadius: '999px',
+  padding: '5px 32px 5px 14px',
+  fontSize: '0.775rem',
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  color: 'var(--muted)',
+  cursor: 'pointer',
+  outline: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  transition: 'background-color 0.18s ease, color 0.18s ease',
 }
 
-function Pill({ layoutId, isActive, onClick, testId, children }: PillProps): JSX.Element {
-  return (
-    <button
-      type="button"
-      className="pill"
-      aria-pressed={isActive}
-      data-testid={testId}
-      onClick={onClick}
-      style={{
-        color: isActive ? '#ffffff' : 'var(--muted)',
-        background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
-        transition: 'color 0.22s cubic-bezier(0.32,0.72,0,1), background 0.22s cubic-bezier(0.32,0.72,0,1)',
-      }}
-    >
-      <AnimatePresence>
-        {isActive && (
-          <motion.span
-            layoutId={layoutId}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ type: 'spring', bounce: 0.2, duration: 0.38 }}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: '999px',
-              background: 'var(--primary)',
-              boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
-              zIndex: -1,
-            }}
-          />
-        )}
-      </AnimatePresence>
-      {children}
-    </button>
-  )
+const activeSelectStyle: React.CSSProperties = {
+  ...selectStyle,
+  background: 'var(--primary)',
+  color: '#ffffff',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
 }
 
 export function FilterBar({ availableMonths, availableBanks, availableCards, filter, onChange }: FilterBarProps): JSX.Element {
+  const handleMonthChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>): void => {
+      onChange({ ...filter, month: e.target.value || null })
+    },
+    [filter, onChange],
+  )
+
+  const handleBankChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>): void => {
+      onChange({ ...filter, bank: (e.target.value as BankSlug) || null, statement_id: null })
+    },
+    [filter, onChange],
+  )
+
+  const handleCardChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>): void => {
+      const val = e.target.value
+      if (!val) {
+        onChange({ ...filter, statement_id: null })
+        return
+      }
+      const card = availableCards.find((c) => c.statement_id === val)
+      if (card) onChange({ ...filter, bank: card.bank, statement_id: val })
+    },
+    [filter, availableCards, onChange],
+  )
+
   const visibleCards = filter.bank !== null
     ? availableCards.filter((c) => c.bank === filter.bank)
     : availableCards
 
-  const handleMonthAll = useCallback((): void => {
-    onChange({ ...filter, month: null })
-  }, [filter, onChange])
-
-  const handleBankAll = useCallback((): void => {
-    onChange({ ...filter, bank: null, statement_id: null })
-  }, [filter, onChange])
-
-  const handleCardAll = useCallback((): void => {
-    onChange({ ...filter, statement_id: null })
-  }, [filter, onChange])
-
-  const handleMonthClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>): void => {
-      const month = e.currentTarget.dataset.month
-      if (month) onChange({ ...filter, month })
-    },
-    [filter, onChange],
-  )
-
-  const handleBankClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>): void => {
-      const bank = e.currentTarget.dataset.bank as BankSlug | undefined
-      if (bank) onChange({ ...filter, bank, statement_id: null })
-    },
-    [filter, onChange],
-  )
-
-  const handleCardClick = useCallback(
-    (e: MouseEvent<HTMLButtonElement>): void => {
-      const statementId = e.currentTarget.dataset.statementId
-      const bank = e.currentTarget.dataset.bank as BankSlug | undefined
-      if (statementId && bank) onChange({ ...filter, bank, statement_id: statementId })
-    },
-    [filter, onChange],
-  )
-
   return (
-    <div className="flex flex-col gap-2" role="group" aria-label="Dashboard filters">
-
-      {/* Month pills */}
-      <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
-        <Pill
-          layoutId="active-month-pill"
-          isActive={filter.month === null}
-          onClick={handleMonthAll}
-          testId="month-all"
+    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Dashboard filters">
+      {availableMonths.length > 0 && (
+        <select
+          value={filter.month ?? ''}
+          onChange={handleMonthChange}
+          style={filter.month ? activeSelectStyle : selectStyle}
+          data-testid="month-dropdown"
+          aria-label="Filter by month"
         >
-          All months
-        </Pill>
-        {availableMonths.map((month) => (
-          <button
-            key={month}
-            type="button"
-            className="pill"
-            aria-pressed={filter.month === month}
-            data-testid={`month-filter-${month}`}
-            data-month={month}
-            onClick={handleMonthClick}
-            style={{
-              color: filter.month === month ? '#ffffff' : 'var(--muted)',
-              background: filter.month === month ? 'transparent' : 'rgba(12, 30, 22, 0.04)',
-            }}
-          >
-            <AnimatePresence>
-              {filter.month === month && (
-                <motion.span
-                  layoutId="active-month-pill"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', bounce: 0.2, duration: 0.38 }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '999px',
-                    background: 'var(--primary)',
-                    boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
-                    zIndex: -1,
-                  }}
-                />
-              )}
-            </AnimatePresence>
-            {formatMonth(month)}
-          </button>
-        ))}
-      </div>
-
-      {/* Bank pills */}
-      <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
-        <Pill
-          layoutId="active-bank-pill"
-          isActive={filter.bank === null}
-          onClick={handleBankAll}
-          testId="bank-all"
-        >
-          All banks
-        </Pill>
-        {availableBanks.map((bank) => {
-          const isActive = filter.bank === bank && filter.statement_id === null
-          return (
-            <button
-              key={bank}
-              type="button"
-              className="pill"
-              aria-pressed={isActive}
-              data-testid={`bank-filter-${bank}`}
-              data-bank={bank}
-              onClick={handleBankClick}
-              style={{
-                color: isActive ? '#ffffff' : 'var(--muted)',
-                background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
-              }}
-            >
-              <AnimatePresence>
-                {isActive && (
-                  <motion.span
-                    layoutId="active-bank-pill"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.38 }}
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      borderRadius: '999px',
-                      background: 'var(--primary)',
-                      boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
-                      zIndex: -1,
-                    }}
-                  />
-                )}
-              </AnimatePresence>
-              {bank.toUpperCase()}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Card pills */}
-      {availableCards.length > 0 && (
-        <div className="filter-bar-scroll flex gap-1.5 overflow-x-auto pb-1">
-          <Pill
-            layoutId="active-card-pill"
-            isActive={filter.statement_id === null}
-            onClick={handleCardAll}
-            testId="card-all"
-          >
-            All cards
-          </Pill>
-          {visibleCards.map((card) => {
-            const isActive = filter.statement_id === card.statement_id
-            return (
-              <button
-                key={card.statement_id}
-                type="button"
-                className="pill"
-                aria-pressed={isActive}
-                data-testid={`card-filter-${card.statement_id}`}
-                data-statement-id={card.statement_id}
-                data-bank={card.bank}
-                onClick={handleCardClick}
-                style={{
-                  color: isActive ? '#ffffff' : 'var(--muted)',
-                  background: isActive ? 'transparent' : 'rgba(15, 23, 42, 0.05)',
-                }}
-              >
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.span
-                      layoutId="active-card-pill"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ type: 'spring', bounce: 0.2, duration: 0.38 }}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '999px',
-                        background: 'var(--primary)',
-                        boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)',
-                        zIndex: -1,
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-                {formatCardLabel(card)}
-              </button>
-            )
-          })}
-        </div>
+          <option value="">All months</option>
+          {availableMonths.map((m) => (
+            <option key={m} value={m}>{formatMonth(m)}</option>
+          ))}
+        </select>
       )}
 
+      {availableBanks.length > 0 && (
+        <select
+          value={filter.bank ?? ''}
+          onChange={handleBankChange}
+          style={filter.bank && !filter.statement_id ? activeSelectStyle : selectStyle}
+          data-testid="bank-dropdown"
+          aria-label="Filter by bank"
+        >
+          <option value="">All banks</option>
+          {availableBanks.map((bank) => (
+            <option key={bank} value={bank}>{bank.toUpperCase()}</option>
+          ))}
+        </select>
+      )}
+
+      {availableCards.length > 0 && (
+        <select
+          value={filter.statement_id ?? ''}
+          onChange={handleCardChange}
+          style={filter.statement_id ? activeSelectStyle : selectStyle}
+          data-testid="card-dropdown"
+          aria-label="Filter by card"
+        >
+          <option value="">All cards</option>
+          {visibleCards.map((card) => (
+            <option key={card.statement_id} value={card.statement_id}>
+              {formatCardLabel(card)}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }
