@@ -180,5 +180,5 @@ export function getFilteredTransactions(data: DashboardData, filter: FilterState
   const statementIds = new Set(filteredStatements.map((s) => s.id))
   return data.transactions
     .filter((t) => statementIds.has(t.statement_id))
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => b.amount - a.amount)
 }

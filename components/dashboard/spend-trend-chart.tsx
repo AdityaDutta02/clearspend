@@ -4,6 +4,8 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -159,6 +161,43 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
       ) : data.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No data available</p>
+        </div>
+      ) : data.length === 1 ? (
+        <div style={{ flex: 1, minHeight: '200px', overflow: 'visible' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="40%">
+              <CartesianGrid strokeDasharray="3 6" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: "'Plus Jakarta Sans', system-ui", fontWeight: 500 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tickFormatter={formatYAxis}
+                tick={{ fontSize: 10, fill: 'var(--muted)', fontFamily: "'Plus Jakarta Sans', system-ui", fontWeight: 500 }}
+                tickLine={false}
+                axisLine={false}
+                width={52}
+              />
+              <Tooltip
+                content={<CustomTooltip />}
+                wrapperStyle={{ zIndex: 50, overflow: 'visible' }}
+              />
+              {activeCategories.map((slug) => (
+                <Bar
+                  key={slug}
+                  dataKey={slug}
+                  stackId="spend"
+                  fill={CATEGORY_COLORS[slug]}
+                  isAnimationActive
+                  animationDuration={600}
+                  animationEasing="ease-out"
+                  radius={activeCategories.indexOf(slug) === activeCategories.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       ) : (
         <div style={{ flex: 1, minHeight: '200px', overflow: 'visible' }}>
