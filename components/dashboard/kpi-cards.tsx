@@ -194,7 +194,7 @@ export function KpiCards({ metrics, isLoading }: KpiCardsProps): JSX.Element {
         </div>
         {isLoading ? <ShimmerLine width="60%" height="1.5rem" /> : (
           <>
-            <p style={{ fontSize: 'clamp(0.9rem, 1.8vw, 1.05rem)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, color: 'var(--text)' }}>
+            <p style={{ fontSize: '0.88rem', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2, color: 'var(--text)' }}>
               {topCategory !== null ? CATEGORY_DISPLAY_NAMES[topCategory] : '—'}
             </p>
             {topCategory !== null && (
