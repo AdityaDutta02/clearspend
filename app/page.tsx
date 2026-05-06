@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
 import type { RawTransaction } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 import type { FilterState } from '@/lib/dashboard-data'
@@ -28,6 +28,7 @@ export default function HomePage(): JSX.Element {
   const [filter, setFilter] = useState<FilterState>({ month: null, bank: null, statement_id: null })
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [analyseError, setAnalyseError] = useState<string | null>(null)
+  const [showUploadModal, setShowUploadModal] = useState<boolean>(false)
 
   const handleParsed = useCallback(
     (result: { file: File; text: string; transactions: RawTransaction[]; detection: DetectionResult }): void => {
@@ -83,6 +84,7 @@ export default function HomePage(): JSX.Element {
       // Commit success state before the optional refresh
       setPendingUpload(null)
       setPageState('idle')
+      setShowUploadModal(false)
       try {
         await refresh()
       } catch {
@@ -114,10 +116,8 @@ export default function HomePage(): JSX.Element {
 
   const isUploadDisabled = pageState !== 'idle'
 
-  const uploadZoneRef = useRef<HTMLDivElement>(null)
-
   const handleUploadClick = useCallback((): void => {
-    uploadZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setShowUploadModal(true)
   }, [])
 
   // Token not yet available — show connecting spinner
@@ -233,64 +233,6 @@ export default function HomePage(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2" ref={uploadZoneRef}>
-        <UploadZone
-          onParsed={handleParsed}
-          onError={handleUploadError}
-          disabled={isUploadDisabled}
-        />
-
-        {uploadError !== null && (
-          <div
-            className="mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
-            style={{
-              background: 'var(--accent-negative-subtle)',
-              border: '1px solid rgba(190, 18, 60, 0.2)',
-              color: 'var(--accent-negative)',
-            }}
-            role="alert"
-            data-testid="upload-error-alert"
-          >
-            <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{uploadError}</span>
-            <button
-              type="button"
-              onClick={handleDismissUploadError}
-              aria-label="Dismiss error"
-              className="shrink-0 font-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
-              data-testid="dismiss-upload-error"
-            >
-              ×
-            </button>
-          </div>
-        )}
-
-        {analyseError !== null && (
-          <div
-            className="mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
-            style={{
-              background: 'var(--accent-negative-subtle)',
-              border: '1px solid rgba(190, 18, 60, 0.2)',
-              color: 'var(--accent-negative)',
-            }}
-            role="alert"
-            data-testid="analyse-error-alert"
-          >
-            <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{analyseError}</span>
-            <button
-              type="button"
-              onClick={handleDismissAnalyseError}
-              aria-label="Dismiss error"
-              className="shrink-0 font-bold"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
-              data-testid="dismiss-analyse-error"
-            >
-              ×
-            </button>
-          </div>
-        )}
-      </div>
-
       <DashboardShell
         data={data}
         filter={filter}
@@ -299,6 +241,107 @@ export default function HomePage(): JSX.Element {
         isLoading={dataLoading}
       />
 
+      {analyseError !== null && (
+        <div
+          className="max-w-5xl mx-auto px-4 mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
+          style={{
+            background: 'var(--accent-negative-subtle)',
+            border: '1px solid rgba(190, 18, 60, 0.2)',
+            color: 'var(--accent-negative)',
+          }}
+          role="alert"
+          data-testid="analyse-error-alert"
+        >
+          <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{analyseError}</span>
+          <button
+            type="button"
+            onClick={handleDismissAnalyseError}
+            aria-label="Dismiss error"
+            className="shrink-0 font-bold"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
+            data-testid="dismiss-analyse-error"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {showUploadModal && (
+        <div
+          data-testid="upload-modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg)',
+              borderRadius: '1.5rem',
+              padding: '2rem',
+              width: 'min(480px, 90vw)',
+              position: 'relative',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setShowUploadModal(false) }}
+              aria-label="Close upload modal"
+              data-testid="close-upload-modal"
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--muted)',
+                fontSize: '1.25rem',
+                lineHeight: 1,
+                fontWeight: 700,
+              }}
+            >
+              ×
+            </button>
+
+            <UploadZone
+              onParsed={handleParsed}
+              onError={handleUploadError}
+              disabled={isUploadDisabled}
+            />
+
+            {uploadError !== null && (
+              <div
+                className="mt-3 flex items-start justify-between gap-2 p-3 rounded-xl text-sm"
+                style={{
+                  background: 'var(--accent-negative-subtle)',
+                  border: '1px solid rgba(190, 18, 60, 0.2)',
+                  color: 'var(--accent-negative)',
+                }}
+                role="alert"
+                data-testid="upload-error-alert"
+              >
+                <span style={{ fontWeight: 500, fontSize: '0.82rem' }}>{uploadError}</span>
+                <button
+                  type="button"
+                  onClick={handleDismissUploadError}
+                  aria-label="Dismiss error"
+                  className="shrink-0 font-bold"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent-negative)', fontSize: '1rem', lineHeight: 1 }}
+                  data-testid="dismiss-upload-error"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <ConfirmModal
         isOpen={pageState === 'confirming' || pageState === 'analysing'}
