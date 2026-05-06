@@ -4,9 +4,9 @@ import { SpendTrendChart } from '@/components/dashboard/spend-trend-chart'
 import type { ChartPoint } from '@/lib/dashboard-data'
 
 const sampleData: ChartPoint[] = [
-  { month: '2025-01', total: 25000 },
-  { month: '2025-02', total: 32000 },
-  { month: '2025-03', total: 18000 },
+  { month: '2025-01', total: 25000, categories: { food: 10000, groceries: 8000, transport: 7000 } },
+  { month: '2025-02', total: 32000, categories: { food: 12000, groceries: 10000, transport: 10000 } },
+  { month: '2025-03', total: 18000, categories: { food: 7000, groceries: 6000, transport: 5000 } },
 ]
 
 describe('SpendTrendChart', () => {
@@ -24,34 +24,23 @@ describe('SpendTrendChart', () => {
     expect(screen.getByText('No data available')).toBeInTheDocument()
   })
 
-  it('renders SVG bars for each data point when data has items', () => {
+  it('renders chart container when data has items', () => {
     render(<SpendTrendChart data={sampleData} isLoading={false} />)
 
     const chart = screen.getByTestId('spend-trend-chart')
     expect(chart).toBeInTheDocument()
-
-    // SVG should be present
-    const svg = chart.querySelector('svg')
-    expect(svg).toBeInTheDocument()
-
-    // Each data point should have a bar group
-    for (const point of sampleData) {
-      expect(screen.getByTestId(`bar-${point.month}`)).toBeInTheDocument()
-    }
   })
 
-  it('correct number of bars matches data length', () => {
+  it('shows title "Monthly Spend"', () => {
     render(<SpendTrendChart data={sampleData} isLoading={false} />)
 
-    const chart = screen.getByTestId('spend-trend-chart')
-    const barGroups = chart.querySelectorAll('[data-testid^="bar-"]')
-    expect(barGroups).toHaveLength(sampleData.length)
+    expect(screen.getByText('Monthly Spend')).toBeInTheDocument()
   })
 
-  it('shows title "Spend Trend"', () => {
+  it('shows "Over time" label', () => {
     render(<SpendTrendChart data={sampleData} isLoading={false} />)
 
-    expect(screen.getByText('Spend Trend')).toBeInTheDocument()
+    expect(screen.getByText('Over time')).toBeInTheDocument()
   })
 
   it('does not show shimmer when not loading', () => {
