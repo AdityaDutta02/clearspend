@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import type { DashboardData } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
@@ -51,14 +52,14 @@ export function DashboardShell({
   onUploadClick,
   isLoading,
 }: DashboardShellProps): JSX.Element {
-  const filteredAnalyses = filterAnalyses(data, filter)
+  const filteredAnalyses = useMemo(() => filterAnalyses(data, filter), [data, filter])
   // KPIs always use all-time totals across all banks/cards; only month filter applies
-  const kpiMetrics = computeKpis(data.analyses, filter)
-  const availableMonths = getAvailableMonths(data)
-  const availableBanks = getAvailableBanks(data)
-  const availableCards = getAvailableCards(data)
-  const trendData = getSpendTrendData(filteredAnalyses)
-  const filteredTransactions = getFilteredTransactions(data, filter)
+  const kpiMetrics = useMemo(() => computeKpis(data.analyses, filter), [data.analyses, filter])
+  const availableMonths = useMemo(() => getAvailableMonths(data), [data])
+  const availableBanks = useMemo(() => getAvailableBanks(data), [data])
+  const availableCards = useMemo(() => getAvailableCards(data), [data])
+  const trendData = useMemo(() => getSpendTrendData(filteredAnalyses), [filteredAnalyses])
+  const filteredTransactions = useMemo(() => getFilteredTransactions(data, filter), [data, filter])
 
   return (
     <main

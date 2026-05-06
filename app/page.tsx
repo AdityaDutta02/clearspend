@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import type { RawTransaction } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 import type { FilterState } from '@/lib/dashboard-data'
@@ -113,6 +113,12 @@ export default function HomePage(): JSX.Element {
   }, [])
 
   const isUploadDisabled = pageState !== 'idle'
+
+  const uploadZoneRef = useRef<HTMLDivElement>(null)
+
+  const handleUploadClick = useCallback((): void => {
+    uploadZoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
   // Token not yet available — show connecting spinner
   if (token === null) {
@@ -227,7 +233,7 @@ export default function HomePage(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2">
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-2" ref={uploadZoneRef}>
         <UploadZone
           onParsed={handleParsed}
           onError={handleUploadError}
@@ -289,6 +295,7 @@ export default function HomePage(): JSX.Element {
         data={data}
         filter={filter}
         onFilterChange={handleFilterChange}
+        onUploadClick={handleUploadClick}
         isLoading={dataLoading}
       />
 
