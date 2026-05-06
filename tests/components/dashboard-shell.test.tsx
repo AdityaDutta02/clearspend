@@ -29,9 +29,15 @@ vi.mock('@/components/dashboard/spend-trend-chart', () => ({
   ),
 }))
 
-vi.mock('@/components/dashboard/upi-chart', () => ({
-  UpiChart: ({ analyses }: { analyses: unknown[]; isLoading: boolean }) => (
-    <div data-testid="upi-chart" data-count={analyses.length} />
+vi.mock('@/components/dashboard/category-chart', () => ({
+  CategoryChart: ({ analyses }: { analyses: unknown[]; isLoading: boolean }) => (
+    <div data-testid="category-chart" data-count={analyses.length} />
+  ),
+}))
+
+vi.mock('@/components/dashboard/transactions-table', () => ({
+  TransactionsTable: ({ transactions }: { transactions: unknown[]; isLoading: boolean }) => (
+    <div data-testid="transactions-table" data-count={transactions.length} />
   ),
 }))
 
@@ -44,6 +50,7 @@ vi.mock('@/components/dashboard/insights-strip', () => ({
 const makeData = (overrides: Partial<DashboardData> = {}): DashboardData => ({
   statements: [],
   analyses: [],
+  transactions: [],
   ...overrides,
 })
 
@@ -60,11 +67,12 @@ describe('DashboardShell', () => {
         data={makeData()}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ClearSpend')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Your Financial')
   })
 
   it('renders the tagline text', () => {
@@ -73,11 +81,12 @@ describe('DashboardShell', () => {
         data={makeData()}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
 
-    expect(screen.getByText('Your money, finally legible.')).toBeInTheDocument()
+    expect(screen.getByText('Track, filter, and understand where your money goes.')).toBeInTheDocument()
   })
 
   it('renders the FilterBar', () => {
@@ -86,6 +95,7 @@ describe('DashboardShell', () => {
         data={makeData()}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
@@ -99,13 +109,13 @@ describe('DashboardShell', () => {
         data={makeData()}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
 
     expect(screen.getByTestId('kpi-cards')).toBeInTheDocument()
     expect(screen.getByTestId('spend-trend-chart')).toBeInTheDocument()
-    expect(screen.getByTestId('upi-chart')).toBeInTheDocument()
     expect(screen.getByTestId('insights-strip')).toBeInTheDocument()
   })
 
@@ -140,6 +150,7 @@ describe('DashboardShell', () => {
         },
       ],
       analyses,
+      transactions: [],
     }
 
     render(
@@ -147,6 +158,7 @@ describe('DashboardShell', () => {
         data={data}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
@@ -191,6 +203,7 @@ describe('DashboardShell', () => {
         },
       ],
       analyses,
+      transactions: [],
     }
 
     // Filter to month 2025-01 — only s1/a1 should pass
@@ -201,12 +214,12 @@ describe('DashboardShell', () => {
         data={data}
         filter={filter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
 
-    // UpiChart and InsightsStrip both receive filteredAnalyses; with month filter only 1 passes
-    expect(screen.getByTestId('upi-chart').getAttribute('data-count')).toBe('1')
+    // InsightsStrip receives filteredAnalyses; with month filter only 1 passes
     expect(screen.getByTestId('insights-strip').getAttribute('data-count')).toBe('1')
   })
 
@@ -216,6 +229,7 @@ describe('DashboardShell', () => {
         data={makeData()}
         filter={defaultFilter}
         onFilterChange={vi.fn()}
+        onUploadClick={vi.fn()}
         isLoading={false}
       />,
     )
