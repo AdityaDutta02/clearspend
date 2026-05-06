@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useCallback, useEffect } from 'react'
 import type { RawTransaction } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
