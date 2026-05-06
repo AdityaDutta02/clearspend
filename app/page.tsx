@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { RawTransaction } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 import type { FilterState } from '@/lib/dashboard-data'
@@ -35,6 +35,7 @@ export default function HomePage(): JSX.Element {
       setUploadError(null)
       setAnalyseError(null)
       setPendingUpload(result)
+      setShowUploadModal(false)
       setPageState('confirming')
     },
     [],
@@ -119,6 +120,19 @@ export default function HomePage(): JSX.Element {
   const handleUploadClick = useCallback((): void => {
     setShowUploadModal(true)
   }, [])
+
+  const handleCloseUploadModal = useCallback((): void => {
+    setShowUploadModal(false)
+  }, [])
+
+  useEffect(() => {
+    if (!showUploadModal) return
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setShowUploadModal(false)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showUploadModal])
 
   // Token not yet available — show connecting spinner
   if (token === null) {
@@ -269,6 +283,10 @@ export default function HomePage(): JSX.Element {
       {showUploadModal && (
         <div
           data-testid="upload-modal"
+          role="dialog"
+          aria-modal={true}
+          aria-label="Upload statement"
+          onClick={handleCloseUploadModal}
           style={{
             position: 'fixed',
             inset: 0,
@@ -280,6 +298,7 @@ export default function HomePage(): JSX.Element {
           }}
         >
           <div
+            onClick={(e) => { e.stopPropagation() }}
             style={{
               background: 'var(--bg)',
               borderRadius: '1.5rem',
@@ -290,7 +309,7 @@ export default function HomePage(): JSX.Element {
           >
             <button
               type="button"
-              onClick={() => { setShowUploadModal(false) }}
+              onClick={handleCloseUploadModal}
               aria-label="Close upload modal"
               data-testid="close-upload-modal"
               style={{
