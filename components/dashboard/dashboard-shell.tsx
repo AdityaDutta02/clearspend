@@ -10,18 +10,20 @@ import {
   getAvailableMonths,
   getAvailableBanks,
   getAvailableCards,
+  getFilteredTransactions,
 } from '@/lib/dashboard-data'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import { KpiCards } from '@/components/dashboard/kpi-cards'
 import { SpendTrendChart } from '@/components/dashboard/spend-trend-chart'
-import { UpiChart } from '@/components/dashboard/upi-chart'
 import { CategoryChart } from '@/components/dashboard/category-chart'
+import { TransactionsTable } from '@/components/dashboard/transactions-table'
 import { InsightsStrip } from '@/components/dashboard/insights-strip'
 
 export interface DashboardShellProps {
   data: DashboardData
   filter: FilterState
   onFilterChange: (filter: FilterState) => void
+  onUploadClick: () => void
   isLoading: boolean
 }
 
@@ -46,14 +48,17 @@ export function DashboardShell({
   data,
   filter,
   onFilterChange,
+  onUploadClick,
   isLoading,
 }: DashboardShellProps): JSX.Element {
   const filteredAnalyses = filterAnalyses(data, filter)
-  const kpiMetrics = computeKpis(filteredAnalyses, filter)
+  // KPIs always use all-time totals across all banks/cards; only month filter applies
+  const kpiMetrics = computeKpis(data.analyses, filter)
   const availableMonths = getAvailableMonths(data)
   const availableBanks = getAvailableBanks(data)
   const availableCards = getAvailableCards(data)
   const trendData = getSpendTrendData(filteredAnalyses)
+  const filteredTransactions = getFilteredTransactions(data, filter)
 
   return (
     <main
@@ -64,43 +69,78 @@ export function DashboardShell({
       <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col gap-5">
 
         {/* ── Header ── */}
-        <div className="reveal">
-          <div
-            className="eyebrow"
-            style={{
-              background: 'var(--primary-subtle)',
-              color: 'var(--primary)',
-              marginBottom: '12px',
-              fontSize: '0.6rem',
-            }}
-          >
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--primary)', flexShrink: 0 }} />
-            ClearSpend
+        <div className="reveal" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+          <div>
+            <div
+              className="eyebrow"
+              style={{
+                background: 'var(--primary-subtle)',
+                color: 'var(--primary)',
+                marginBottom: '12px',
+                fontSize: '0.6rem',
+              }}
+            >
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--primary)', flexShrink: 0 }} />
+              ClearSpend
+            </div>
+            <h1
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 3.2rem)',
+                fontWeight: 800,
+                letterSpacing: '-0.04em',
+                lineHeight: 1.0,
+                color: 'var(--text)',
+              }}
+            >
+              Your Financial<br />
+              <span style={{ color: 'var(--primary)' }}>Picture.</span>
+            </h1>
+            <p
+              style={{
+                fontSize: '0.9rem',
+                color: 'var(--muted)',
+                marginTop: '8px',
+                fontWeight: 400,
+                letterSpacing: '-0.01em',
+                maxWidth: '42ch',
+              }}
+            >
+              Track, filter, and understand where your money goes.
+            </p>
           </div>
-          <h1
+
+          {/* ── Upload button ── */}
+          <button
+            type="button"
+            onClick={onUploadClick}
+            data-testid="add-statement-btn"
             style={{
-              fontSize: 'clamp(2rem, 5vw, 3.2rem)',
-              fontWeight: 800,
-              letterSpacing: '-0.04em',
-              lineHeight: 1.0,
-              color: 'var(--text)',
-            }}
-          >
-            Your Financial<br />
-            <span style={{ color: 'var(--primary)' }}>Picture.</span>
-          </h1>
-          <p
-            style={{
-              fontSize: '0.9rem',
-              color: 'var(--muted)',
-              marginTop: '8px',
-              fontWeight: 400,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: '999px',
+              background: 'var(--primary)',
+              color: '#ffffff',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              fontFamily: 'inherit',
               letterSpacing: '-0.01em',
-              maxWidth: '42ch',
+              flexShrink: 0,
+              marginTop: '4px',
+              boxShadow: '0 2px 10px rgba(37,99,235,0.25)',
+              transition: 'opacity 0.18s ease, transform 0.18s ease',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
           >
-            Track, filter, and understand where your money goes.
-          </p>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Statement
+          </button>
         </div>
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-5">
@@ -127,9 +167,9 @@ export function DashboardShell({
             <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
           </motion.div>
 
-          {/* ── UPI (full width) ── */}
+          {/* ── Transactions (full width) ── */}
           <motion.div variants={rowVariants}>
-            <UpiChart analyses={filteredAnalyses} isLoading={isLoading} />
+            <TransactionsTable transactions={filteredTransactions} isLoading={isLoading} />
           </motion.div>
 
           {/* ── Insights Grid ── */}
