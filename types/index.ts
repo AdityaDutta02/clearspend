@@ -5,7 +5,7 @@ export type BankSlug =
 export type AccountType = 'credit' | 'debit'
 
 export type CategorySlug =
-  | 'food' | 'transport' | 'shopping' | 'emi_loans' | 'upi'
+  | 'food' | 'groceries' | 'transport' | 'shopping' | 'emi_loans'
   | 'utilities' | 'entertainment' | 'health' | 'travel' | 'others'
 
 export interface Statement {
@@ -72,4 +72,5 @@ export interface RawTransaction {
 export interface DashboardData {
   statements: Statement[]
   analyses: Analysis[]
+  transactions: Transaction[]
 }
