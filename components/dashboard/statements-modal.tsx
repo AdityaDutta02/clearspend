@@ -79,22 +79,26 @@ export function StatementsModal({ data, token, onClose, onDeleted }: StatementsM
       }
 
       onDeleted()
-    } catch {
+    } catch (err) {
+      console.error('[StatementsModal] delete failed', { statementId: stmt.id, err })
       // Restore the row on failure
-      setVisibleIds((prev) => {
-        const idx = data.statements.findIndex((s) => s.id === stmt.id)
-        const next = [...prev]
-        // Re-insert in original order
-        let insertAt = next.length
-        for (let i = 0; i < data.statements.length; i++) {
-          if (data.statements[i].id === stmt.id) {
-            insertAt = next.filter((id) => data.statements.findIndex((s) => s.id === id) < i).length
-            break
+      // Only re-insert if the statement still exists in current data
+      const stillExists = data.statements.some((s) => s.id === stmt.id)
+      if (stillExists) {
+        setVisibleIds((prev) => {
+          const next = [...prev]
+          // Re-insert in original order
+          let insertAt = next.length
+          for (let i = 0; i < data.statements.length; i++) {
+            if (data.statements[i].id === stmt.id) {
+              insertAt = next.filter((id) => data.statements.findIndex((s) => s.id === id) < i).length
+              break
+            }
           }
-        }
-        next.splice(insertAt, 0, stmt.id)
-        return next
-      })
+          next.splice(insertAt, 0, stmt.id)
+          return next
+        })
+      }
       setRowErrors((prev) => ({ ...prev, [stmt.id]: 'Failed to delete. Please try again.' }))
     }
   }

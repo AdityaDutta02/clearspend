@@ -29,7 +29,7 @@ const makeData = (): DashboardData => ({
       currency: 'INR',
       uploaded_at: '2025-02-28T00:00:00Z',
     },
-  ] as unknown as DashboardData['statements'],
+  ] as unknown as DashboardData['statements'], // Omits user_id and other server-only fields not needed for render tests
   analyses: [
     {
       id: 'a1',
@@ -199,6 +199,26 @@ describe('StatementsModal', () => {
     })
 
     expect(screen.getByTestId('error-msg-stmt-1')).toBeDefined()
+  })
+
+  it('restores row and shows error when fetch throws (network error)', async () => {
+    vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'))
+
+    render(
+      <StatementsModal
+        data={makeData()}
+        token="tok"
+        onClose={vi.fn()}
+        onDeleted={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('delete-btn-stmt-1'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('statement-row-stmt-1')).toBeInTheDocument()
+      expect(screen.getByTestId('error-msg-stmt-1')).toBeInTheDocument()
+    })
   })
 
   it('calls onClose when Escape key is pressed', () => {
