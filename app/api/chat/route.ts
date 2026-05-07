@@ -54,7 +54,8 @@ export async function POST(req: NextRequest): Promise<Response> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-flash-1.5',
+          category: 'chat',
+          tier: 'fast',
           messages,
           stream: true,
         }),
