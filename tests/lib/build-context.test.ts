@@ -42,8 +42,8 @@ beforeEach(() => {
 describe('buildFinancialContext', () => {
   it('returns no-data message when analyses is empty', async () => {
     mockDbList.mockImplementation(async (table: string) => {
-      if (table === 'statements') return [mockStatement] as never
-      return [] as never
+      if (table === 'statements') return [mockStatement] as Statement[]
+      return [] as Analysis[]
     })
 
     const result = await buildFinancialContext('test-token')
@@ -52,8 +52,8 @@ describe('buildFinancialContext', () => {
 
   it('returns correctly formatted context with mock data', async () => {
     mockDbList.mockImplementation(async (table: string) => {
-      if (table === 'statements') return [mockStatement] as never
-      return [mockAnalysis] as never
+      if (table === 'statements') return [mockStatement] as Statement[]
+      return [mockAnalysis] as Analysis[]
     })
 
     const result = await buildFinancialContext('test-token')
@@ -76,8 +76,8 @@ describe('buildFinancialContext', () => {
     const statementMar: Statement = { ...mockStatement, id: 'stmt-2', month: '2025-03' }
 
     mockDbList.mockImplementation(async (table: string) => {
-      if (table === 'statements') return [mockStatement, statementMar] as never
-      return [analysisJan, analysisMar] as never
+      if (table === 'statements') return [mockStatement, statementMar] as Statement[]
+      return [analysisJan, analysisMar] as Analysis[]
     })
 
     const result = await buildFinancialContext('test-token')
@@ -100,8 +100,8 @@ describe('buildFinancialContext', () => {
     const statement2: Statement = { ...mockStatement, id: 'stmt-2', month: '2025-02' }
 
     mockDbList.mockImplementation(async (table: string) => {
-      if (table === 'statements') return [mockStatement, statement2] as never
-      return [analysis1, analysis2] as never
+      if (table === 'statements') return [mockStatement, statement2] as Statement[]
+      return [analysis1, analysis2] as Analysis[]
     })
 
     const result = await buildFinancialContext('test-token')
