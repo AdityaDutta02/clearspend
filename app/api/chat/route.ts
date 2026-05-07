@@ -54,8 +54,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          category: 'chat',
-          tier: 'fast',
+          model: 'qwen/qwen3.5-flash-02-23',
           messages,
           stream: true,
         }),
