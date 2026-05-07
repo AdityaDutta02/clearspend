@@ -9,7 +9,6 @@ import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import { UploadZone } from '@/components/upload/upload-zone'
 import { ConfirmModal } from '@/components/upload/confirm-modal'
-import { ChatPanel } from '@/components/chat/chat-panel'
 
 type PageState = 'idle' | 'confirming' | 'analysing' | 'error'
 
@@ -257,11 +256,6 @@ export function HomeClient(): JSX.Element {
         token={token}
         refresh={refresh}
       />
-
-      {/* Chat — main feature, always visible below dashboard */}
-      <div className="max-w-5xl mx-auto px-4 pb-10" style={{ marginTop: '1.5rem' }}>
-        <ChatPanel token={token} />
-      </div>
 
       {analyseError !== null && (
         <div

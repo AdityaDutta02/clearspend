@@ -20,6 +20,7 @@ import { CategoryChart } from '@/components/dashboard/category-chart'
 import { TransactionsTable } from '@/components/dashboard/transactions-table'
 import { InsightsStrip } from '@/components/dashboard/insights-strip'
 import { StatementsModal } from '@/components/dashboard/statements-modal'
+import { ChatPanel } from '@/components/chat/chat-panel'
 
 export interface DashboardShellProps {
   data: DashboardData
@@ -198,6 +199,11 @@ export function DashboardShell({
           {/* ── KPI Row ── */}
           <motion.div variants={rowVariants}>
             <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
+          </motion.div>
+
+          {/* ── AI Search Bar ── */}
+          <motion.div variants={rowVariants}>
+            <ChatPanel token={token} />
           </motion.div>
 
           {/* ── Filter Bar ── */}

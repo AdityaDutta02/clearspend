@@ -33,9 +33,10 @@ describe('ChatPanel', () => {
     expect(screen.queryByTestId('chat-toggle-btn')).not.toBeInTheDocument()
   })
 
-  it('shows empty state placeholder initially', () => {
+  it('renders search input with placeholder', () => {
     render(<ChatPanel token="test-token" />)
-    expect(screen.getByText(/Ask anything about your spending/i)).toBeInTheDocument()
+    expect(screen.getByTestId('chat-input')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Ask anything about your finances/i)).toBeInTheDocument()
   })
 
   it('send button disabled when input is empty', () => {
@@ -48,6 +49,24 @@ describe('ChatPanel', () => {
     const input = screen.getByTestId('chat-input')
     fireEvent.change(input, { target: { value: 'How much did I spend?' } })
     expect(screen.getByTestId('chat-send-btn')).not.toBeDisabled()
+  })
+
+  it('shows suggestions dropdown on focus', () => {
+    render(<ChatPanel token="test-token" />)
+    const input = screen.getByTestId('chat-input')
+    fireEvent.focus(input)
+    expect(screen.getByTestId('chat-suggestions')).toBeInTheDocument()
+  })
+
+  it('filters suggestions as user types', () => {
+    render(<ChatPanel token="test-token" />)
+    const input = screen.getByTestId('chat-input')
+    fireEvent.change(input, { target: { value: 'subscription' } })
+    const suggestions = screen.getAllByTestId('chat-suggestion')
+    expect(suggestions.length).toBeGreaterThan(0)
+    suggestions.forEach((s) => {
+      expect(s.textContent?.toLowerCase()).toContain('subscription')
+    })
   })
 
   it('shows loading state while fetching', async () => {
@@ -67,7 +86,7 @@ describe('ChatPanel', () => {
     mockFetch.mockReturnValue(new Promise(() => undefined))
 
     render(<ChatPanel token="test-token" />)
-    const input = screen.getByTestId('chat-input') as HTMLTextAreaElement
+    const input = screen.getByTestId('chat-input') as HTMLInputElement
     fireEvent.change(input, { target: { value: 'How much did I spend?' } })
     fireEvent.click(screen.getByTestId('chat-send-btn'))
 
@@ -168,13 +187,12 @@ describe('ChatPanel', () => {
     })
   })
 
-  it('Shift+Enter does not send the message', async () => {
+  it('Escape key hides suggestions', () => {
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
-    fireEvent.change(input, { target: { value: 'test question' } })
-    fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
-
-    expect(mockFetch).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('chat-user-msg')).not.toBeInTheDocument()
+    fireEvent.focus(input)
+    expect(screen.getByTestId('chat-suggestions')).toBeInTheDocument()
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByTestId('chat-suggestions')).not.toBeInTheDocument()
   })
 })
