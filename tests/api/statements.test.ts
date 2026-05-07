@@ -14,10 +14,19 @@ describe('DELETE /api/statements/[id]', () => {
     vi.clearAllMocks()
   })
 
-  it('returns 401 when no authorization header', async () => {
-    const req = new NextRequest('http://localhost/api/statements/stmt-1', { method: 'DELETE' })
-    const res = await DELETE(req, { params: { id: 'stmt-1' } })
-    expect(res.status).toBe(401)
+  it('returns 401 when authorization header is missing or malformed', async () => {
+    // Missing header
+    const req1 = new NextRequest('http://localhost/api/statements/stmt-1', { method: 'DELETE' })
+    const res1 = await DELETE(req1, { params: { id: 'stmt-1' } })
+    expect(res1.status).toBe(401)
+
+    // Malformed header (no Bearer scheme)
+    const req2 = new NextRequest('http://localhost/api/statements/stmt-1', {
+      method: 'DELETE',
+      headers: { Authorization: 'Token abc123' },
+    })
+    const res2 = await DELETE(req2, { params: { id: 'stmt-1' } })
+    expect(res2.status).toBe(401)
   })
 
   it('cascades delete of transactions and analyses then deletes statement', async () => {
@@ -49,5 +58,19 @@ describe('DELETE /api/statements/[id]', () => {
     const deleteCalls = vi.mocked(dbDelete).mock.calls
     const stmtDeleteIndex = deleteCalls.findIndex((c) => c[0] === 'statements')
     expect(stmtDeleteIndex).toBe(deleteCalls.length - 1)
+  })
+
+  it('returns 500 when dbList throws', async () => {
+    vi.mocked(dbList).mockRejectedValue(new Error('DB unavailable'))
+
+    const req = new NextRequest('http://localhost/api/statements/stmt-1', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer test-token' },
+    })
+    const res = await DELETE(req, { params: { id: 'stmt-1' } })
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body).toEqual({ error: 'DB unavailable' })
   })
 })
