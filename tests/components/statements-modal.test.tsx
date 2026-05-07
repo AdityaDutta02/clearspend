@@ -67,6 +67,7 @@ const makeData = (): DashboardData => ({
   transactions: [
     { id: 't1', statement_id: 'stmt-1', amount: 200, type: 'debit', merchant: 'A', raw_description: 'A', category: 'food', date: '2025-01-01', upi_ref: null, upi_merchant: null },
     { id: 't2', statement_id: 'stmt-1', amount: 300, type: 'debit', merchant: 'B', raw_description: 'B', category: 'food', date: '2025-01-02', upi_ref: null, upi_merchant: null },
+    { id: 't4', statement_id: 'stmt-1', amount: 100, type: 'credit', merchant: 'Refund', raw_description: 'Refund', category: 'others', date: '2025-01-03', upi_ref: null, upi_merchant: null },
     { id: 't3', statement_id: 'stmt-2', amount: 400, type: 'debit', merchant: 'C', raw_description: 'C', category: 'food', date: '2025-02-01', upi_ref: null, upi_merchant: null },
   ],
 })
@@ -100,6 +101,9 @@ describe('StatementsModal', () => {
     // Bank names uppercase
     expect(screen.getByText('HDFC')).toBeDefined()
     expect(screen.getByText('ICICI')).toBeDefined()
+
+    // Transaction count for stmt-1 must be debit-only: 2 debits (t1, t2), not 3 (ignores credit t4)
+    expect(screen.getByText('2 txns')).toBeDefined()
   })
 
   it('optimistically removes the row immediately on delete click', async () => {

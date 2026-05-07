@@ -189,10 +189,7 @@ export function DashboardShell({
             data={data}
             token={token}
             onClose={() => setShowManageStatements(false)}
-            onDeleted={() => {
-              setShowManageStatements(false)
-              refresh()
-            }}
+            onDeleted={refresh}
           />
         )}
 

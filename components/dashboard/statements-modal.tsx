@@ -41,7 +41,7 @@ export function StatementsModal({ data, token, onClose, onDeleted }: StatementsM
   }
 
   function getTransactionCount(statementId: string): number {
-    return data.transactions.filter((t) => t.statement_id === statementId).length
+    return data.transactions.filter((t) => t.statement_id === statementId && t.type === 'debit').length
   }
 
   function getTotalDebit(statementId: string): number {
