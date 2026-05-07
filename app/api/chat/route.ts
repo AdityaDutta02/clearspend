@@ -3,20 +3,32 @@ import { buildFinancialContext } from '@/lib/ai/build-context'
 
 const GATEWAY_URL = process.env.TERMINAL_AI_GATEWAY_URL!
 
+// In-memory context cache: avoid rebuilding DB context on every follow-up
+const ctxCache = new Map<string, { ctx: string; exp: number }>()
+async function getContext(token: string): Promise<string> {
+  const hit = ctxCache.get(token)
+  if (hit && hit.exp > Date.now()) return hit.ctx
+  const ctx = await buildFinancialContext(token)
+  ctxCache.set(token, { ctx, exp: Date.now() + 120_000 })
+  return ctx
+}
+
 function enc(s: string): Uint8Array {
   return new TextEncoder().encode(s)
 }
-
 function sseChunk(delta: string): Uint8Array {
   return enc(`data: ${JSON.stringify({ delta })}\n\n`)
 }
-
 function sseError(message: string): Uint8Array {
   return enc(`data: ${JSON.stringify({ error: message })}\n\n`)
 }
-
 function sseDone(): Uint8Array {
   return enc('data: [DONE]\n\n')
+}
+
+// Yield to the event loop so the HTTP layer can flush buffered chunks
+function yield_(): Promise<void> {
+  return new Promise<void>((r) => setTimeout(r, 0))
 }
 
 export async function POST(req: NextRequest): Promise<Response> {
@@ -37,12 +49,12 @@ export async function POST(req: NextRequest): Promise<Response> {
 
   void (async () => {
     try {
-      const context = await buildFinancialContext(token)
+      const context = await getContext(token)
 
       const messages = [
         {
           role: 'system',
-          content: `You are ClearSpend, a personal financial advisor. Answer using the user's real spending data below. Be concise (under 200 words). Use markdown formatting: **bold** for key numbers/amounts, - bullet lists for multiple items, ### for section headers.\n\n${context}`,
+          content: `You are ClearSpend, a personal financial advisor. Answer using the user's real spending data below. Be concise (under 200 words). Use markdown: **bold** for key numbers, - bullet lists, ### for section headers.\n\n${context}`,
         },
         { role: 'user', content: question },
       ]
@@ -74,7 +86,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const contentType = gatewayRes.headers.get('content-type') ?? ''
 
       if (contentType.includes('text/event-stream') && gatewayRes.body) {
-        // Real SSE from gateway — parse and re-emit as our simple delta format
+        // True SSE from gateway — parse and re-emit
         const reader = gatewayRes.body.getReader()
         const decoder = new TextDecoder()
         let buf = ''
@@ -92,27 +104,28 @@ export async function POST(req: NextRequest): Promise<Response> {
             if (raw === '[DONE]') continue
             try {
               const parsed = JSON.parse(raw) as Record<string, unknown>
-              // Try OpenAI-compatible format first
               const choices = parsed.choices as Array<{ delta?: { content?: string } }> | undefined
               const delta =
                 choices?.[0]?.delta?.content ??
                 (parsed.delta as string | undefined) ??
                 ''
               if (delta) await writer.write(sseChunk(delta))
-            } catch {
-              // ignore malformed chunk
-            }
+            } catch { /* ignore malformed chunk */ }
           }
         }
       } else {
-        // Non-streaming fallback: read full JSON, stream word by word
+        // Non-streaming gateway: read full JSON then trickle word-by-word
+        // Yield every few words so the HTTP layer can flush chunks to the client
         const json = await gatewayRes.json() as { content?: string; error?: string }
+
         if (json.error) {
           await writer.write(sseError(json.error))
         } else {
-          const words = (json.content ?? '').split(/(\s+)/)
-          for (const word of words) {
-            if (word) await writer.write(sseChunk(word))
+          const words = (json.content ?? '').split(/(\s+)/).filter(Boolean)
+          for (let i = 0; i < words.length; i++) {
+            await writer.write(sseChunk(words[i]))
+            // Yield every 4 words — gives the HTTP layer a chance to flush
+            if (i % 4 === 3) await yield_()
           }
         }
       }
@@ -130,6 +143,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'X-Accel-Buffering': 'no',
+      'Transfer-Encoding': 'chunked',
     },
   })
 }
