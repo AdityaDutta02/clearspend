@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ChatRail } from '@/components/chat/chat-rail'
 
 export interface MobileAskSheetProps {
@@ -9,6 +9,19 @@ export interface MobileAskSheetProps {
 
 export function MobileAskSheet({ token }: MobileAskSheetProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    closeButtonRef.current?.focus()
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
+  if (!token) return <></>
 
   return (
     <>
@@ -58,6 +71,9 @@ export function MobileAskSheet({ token }: MobileAskSheetProps): JSX.Element {
           />
           <div
             data-testid="mobile-ask-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Ask ClearSpend"
             style={{
               position: 'fixed',
               insetInline: 0,
@@ -95,6 +111,7 @@ export function MobileAskSheet({ token }: MobileAskSheetProps): JSX.Element {
               </span>
               <button
                 type="button"
+                ref={closeButtonRef}
                 data-testid="mobile-ask-close"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close chat"
