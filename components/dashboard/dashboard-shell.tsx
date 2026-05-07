@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import type { DashboardData } from '@/types'
+import type { DashboardData, CategorySlug } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
 import {
   filterAnalyses,
@@ -60,6 +60,18 @@ export function DashboardShell({
   const availableCards = useMemo(() => getAvailableCards(data), [data])
   const trendData = useMemo(() => getSpendTrendData(filteredAnalyses), [filteredAnalyses])
   const filteredTransactions = useMemo(() => getFilteredTransactions(data, filter), [data, filter])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const availableCategories = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          getFilteredTransactions(data, { ...filter, category: null })
+            .filter((t) => t.type === 'debit')
+            .map((t) => t.category),
+        ),
+      ).sort() as CategorySlug[],
+    [data, filter.month, filter.bank, filter.statement_id],
+  )
 
   return (
     <main
@@ -157,6 +169,7 @@ export function DashboardShell({
               availableMonths={availableMonths}
               availableBanks={availableBanks}
               availableCards={availableCards}
+              availableCategories={availableCategories}
               filter={filter}
               onChange={onFilterChange}
             />

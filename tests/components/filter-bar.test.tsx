@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { FilterBar } from '@/components/dashboard/filter-bar'
 import type { FilterState, CardDescriptor } from '@/lib/dashboard-data'
 
-const defaultFilter: FilterState = { month: null, bank: null, statement_id: null }
+const defaultFilter: FilterState = { month: null, bank: null, statement_id: null, category: null }
 
 const twoHdfcCards: CardDescriptor[] = [
   { statement_id: 'stmt-a', bank: 'hdfc', card_name: 'Regalia', last_four: '1234' },
@@ -18,6 +18,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -38,6 +39,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -52,6 +54,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -62,17 +65,19 @@ describe('FilterBar — select dropdowns', () => {
       month: '2025-01',
       bank: null,
       statement_id: null,
+      category: null,
     })
   })
 
   it('clearing month (selecting empty) calls onChange with month: null', () => {
     const onChange = vi.fn()
-    const filter: FilterState = { month: '2025-01', bank: null, statement_id: null }
+    const filter: FilterState = { month: '2025-01', bank: null, statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -83,6 +88,7 @@ describe('FilterBar — select dropdowns', () => {
       month: null,
       bank: null,
       statement_id: null,
+      category: null,
     })
   })
 
@@ -93,6 +99,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -113,6 +120,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -123,17 +131,19 @@ describe('FilterBar — select dropdowns', () => {
       month: null,
       bank: 'icici',
       statement_id: null,
+      category: null,
     })
   })
 
   it('clearing bank (selecting empty) calls onChange with bank: null and statement_id: null', () => {
     const onChange = vi.fn()
-    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null }
+    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -144,6 +154,7 @@ describe('FilterBar — select dropdowns', () => {
       month: null,
       bank: null,
       statement_id: null,
+      category: null,
     })
   })
 
@@ -154,6 +165,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -174,6 +186,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -184,17 +197,19 @@ describe('FilterBar — select dropdowns', () => {
       month: null,
       bank: 'hdfc',
       statement_id: 'stmt-a',
+      category: null,
     })
   })
 
   it('clearing card (selecting empty) calls onChange with statement_id: null', () => {
     const onChange = vi.fn()
-    const filter: FilterState = { month: null, bank: null, statement_id: 'stmt-a' }
+    const filter: FilterState = { month: null, bank: null, statement_id: 'stmt-a', category: null }
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
+        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -205,6 +220,7 @@ describe('FilterBar — select dropdowns', () => {
       month: null,
       bank: null,
       statement_id: null,
+      category: null,
     })
   })
 
@@ -214,12 +230,13 @@ describe('FilterBar — select dropdowns', () => {
       { statement_id: 'stmt-hdfc', bank: 'hdfc', card_name: null, last_four: '1111' },
       { statement_id: 'stmt-icici', bank: 'icici', card_name: null, last_four: '2222' },
     ]
-    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null }
+    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={mixedCards}
+        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -237,12 +254,13 @@ describe('FilterBar — select dropdowns', () => {
       { statement_id: 'stmt-hdfc', bank: 'hdfc', card_name: null, last_four: '1111' },
       { statement_id: 'stmt-icici', bank: 'icici', card_name: null, last_four: '2222' },
     ]
-    const filter: FilterState = { month: null, bank: null, statement_id: null }
+    const filter: FilterState = { month: null, bank: null, statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={mixedCards}
+        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -264,6 +282,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['icici']}
         availableCards={cards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -283,6 +302,7 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['sbi']}
         availableCards={cards}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -299,10 +319,85 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={[]}
+        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
     )
     expect(screen.queryByTestId('card-dropdown')).not.toBeInTheDocument()
+  })
+
+  it('category dropdown renders options from availableCategories', () => {
+    const onChange = vi.fn()
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={[]}
+        availableCards={[]}
+        availableCategories={['food', 'transport']}
+        filter={{ month: null, bank: null, statement_id: null, category: null }}
+        onChange={onChange}
+      />,
+    )
+    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
+    expect(catSelect).toBeInTheDocument()
+    const options = Array.from(catSelect.options)
+    expect(options).toHaveLength(3) // "All categories" + 2
+    expect(options[0]).toHaveTextContent('All categories')
+    expect(options[1]).toHaveTextContent('Food & Dining')
+    expect(options[2]).toHaveTextContent('Transport')
+  })
+
+  it('category dropdown is not rendered when availableCategories is empty', () => {
+    const onChange = vi.fn()
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={[]}
+        availableCards={[]}
+        availableCategories={[]}
+        filter={{ month: null, bank: null, statement_id: null, category: null }}
+        onChange={onChange}
+      />,
+    )
+    expect(screen.queryByTestId('category-dropdown')).not.toBeInTheDocument()
+  })
+
+  it('selecting a category calls onChange with category value', () => {
+    const onChange = vi.fn()
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={[]}
+        availableCards={[]}
+        availableCategories={['food', 'transport']}
+        filter={{ month: null, bank: null, statement_id: null, category: null }}
+        onChange={onChange}
+      />,
+    )
+    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
+    fireEvent.change(catSelect, { target: { value: 'food' } })
+    expect(onChange).toHaveBeenCalledWith({
+      month: null, bank: null, statement_id: null, category: 'food',
+    })
+  })
+
+  it('clearing category calls onChange with category: null', () => {
+    const onChange = vi.fn()
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={[]}
+        availableCards={[]}
+        availableCategories={['food']}
+        filter={{ month: null, bank: null, statement_id: null, category: 'food' }}
+        onChange={onChange}
+      />,
+    )
+    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
+    fireEvent.change(catSelect, { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith({
+      month: null, bank: null, statement_id: null, category: null,
+    })
   })
 })
