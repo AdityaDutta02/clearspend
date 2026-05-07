@@ -370,7 +370,7 @@ body::before {
 }
 @media (min-width: 1024px) {
   .dashboard-v2-grid {
-    grid-template-columns: 65fr 35fr;
+    grid-template-columns: 75fr 25fr;
   }
   .chat-rail-col {
     display: flex;
