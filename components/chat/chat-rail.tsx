@@ -10,6 +10,7 @@ export interface ChatRailProps {
 }
 
 interface Message {
+  id: number
   role: 'user' | 'assistant'
   content: string
   isError?: boolean
@@ -30,6 +31,8 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
   const abortRef = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const isLoadingRef = useRef(false)
+  const msgIdRef = useRef(0)
 
   useEffect(() => {
     const el = scrollRef.current
@@ -38,19 +41,27 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
     }
   }, [messages, isLoading])
 
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort()
+    }
+  }, [])
+
   const submit = useCallback(
     async (text: string): Promise<void> => {
       const trimmed = text.trim()
-      if (!trimmed || isLoading) return
+      if (!trimmed || isLoadingRef.current) return
+      isLoadingRef.current = true
+      setIsLoading(true)
 
       setQuestion('')
-      setMessages((prev) => [...prev, { role: 'user', content: trimmed }])
-      setIsLoading(true)
+      setMessages((prev) => [...prev, { id: ++msgIdRef.current, role: 'user', content: trimmed }])
 
       abortRef.current?.abort()
       abortRef.current = new AbortController()
       const { signal } = abortRef.current
 
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -76,13 +87,13 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
               : errMsg
           setMessages((prev) => [
             ...prev,
-            { role: 'assistant', content: displayMsg, isError: true },
+            { id: ++msgIdRef.current, role: 'assistant', content: displayMsg, isError: true },
           ])
           return
         }
 
         // Read SSE stream
-        const reader = res.body.getReader()
+        reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buf = ''
         let assistantContent = ''
@@ -110,7 +121,7 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
                   : parsed.error
                 setMessages((prev) => [
                   ...prev,
-                  { role: 'assistant', content: displayMsg, isError: true },
+                  { id: ++msgIdRef.current, role: 'assistant', content: displayMsg, isError: true },
                 ])
                 msgAdded = true
                 continue
@@ -121,13 +132,13 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
                 if (!msgAdded) {
                   setMessages((prev) => [
                     ...prev,
-                    { role: 'assistant', content: assistantContent },
+                    { id: ++msgIdRef.current, role: 'assistant', content: assistantContent },
                   ])
                   msgAdded = true
                 } else {
                   setMessages((prev) => {
                     const next = [...prev]
-                    next[next.length - 1] = { role: 'assistant', content: assistantContent }
+                    next[next.length - 1] = { ...next[next.length - 1], content: assistantContent }
                     return next
                   })
                 }
@@ -142,17 +153,22 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
         setMessages((prev) => [
           ...prev,
           {
+            id: ++msgIdRef.current,
             role: 'assistant',
             content: 'An unexpected error occurred. Please try again.',
             isError: true,
           },
         ])
       } finally {
+        if (reader) {
+          reader.cancel().catch(() => {})
+        }
+        isLoadingRef.current = false
         setIsLoading(false)
         inputRef.current?.focus()
       }
     },
-    [token, isLoading],
+    [token],
   )
 
   const handleKeyDown = useCallback(
@@ -266,9 +282,9 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
         )}
 
         {/* Messages */}
-        {messages.map((msg, i) => (
+        {messages.map((msg) => (
           <div
-            key={i}
+            key={msg.id}
             style={{
               display: 'flex',
               justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
@@ -434,13 +450,6 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
           </svg>
         </button>
       </div>
-
-      <style>{`
-        @keyframes chat-dot-bounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-      `}</style>
     </div>
   )
 }

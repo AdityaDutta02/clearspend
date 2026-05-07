@@ -358,3 +358,8 @@ body::before {
 [data-design="v2"] .kpi-card-hero:hover { box-shadow: none; transform: none; }
 
 [data-design="v2"] body::before { opacity: 0; }
+
+@keyframes chat-dot-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
