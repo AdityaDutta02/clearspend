@@ -1,7 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TransactionsTable } from '@/components/dashboard/transactions-table'
 import type { Transaction } from '@/types'
+import type { FilterState } from '@/lib/dashboard-data'
+
+const defaultFilter: FilterState = { month: null, bank: null, statement_id: null, category: null }
 
 const createTransaction = (overrides: Partial<Transaction> = {}): Transaction => ({
   id: 'tx-1',
@@ -20,21 +23,21 @@ const createTransaction = (overrides: Partial<Transaction> = {}): Transaction =>
 describe('TransactionsTable', () => {
   describe('loading state', () => {
     it('renders shimmer block when isLoading is true', () => {
-      render(<TransactionsTable transactions={[]} isLoading={true} />)
+      render(<TransactionsTable transactions={[]} isLoading={true} filter={defaultFilter} />)
 
       const shimmer = screen.getByTestId('shimmer-block')
       expect(shimmer).toBeInTheDocument()
     })
 
     it('shimmer block has aria-hidden attribute', () => {
-      render(<TransactionsTable transactions={[]} isLoading={true} />)
+      render(<TransactionsTable transactions={[]} isLoading={true} filter={defaultFilter} />)
 
       const shimmer = screen.getByTestId('shimmer-block')
       expect(shimmer).toHaveAttribute('aria-hidden', 'true')
     })
 
     it('does not show shimmer when isLoading is false', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.queryByTestId('shimmer-block')).not.toBeInTheDocument()
     })
@@ -46,13 +49,13 @@ describe('TransactionsTable', () => {
         createTransaction({ type: 'credit', id: 'tx-1' }),
         createTransaction({ type: 'credit', id: 'tx-2' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('No transactions found')).toBeInTheDocument()
     })
 
     it('shows empty state when transactions array is empty', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('No transactions found')).toBeInTheDocument()
     })
@@ -65,7 +68,7 @@ describe('TransactionsTable', () => {
         createTransaction({ type: 'credit', id: 'tx-2', merchant: 'Salary' }),
         createTransaction({ type: 'debit', id: 'tx-3', merchant: 'Amazon' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-tx-3')).toBeInTheDocument()
@@ -78,7 +81,7 @@ describe('TransactionsTable', () => {
         createTransaction({ type: 'credit', id: 'tx-2' }),
         createTransaction({ type: 'credit', id: 'tx-3' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('No transactions found')).toBeInTheDocument()
     })
@@ -89,7 +92,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 25 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       for (let i = 1; i <= 25; i++) {
         expect(screen.getByTestId(`transaction-row-tx-${i}`)).toBeInTheDocument()
       }
@@ -100,7 +103,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 30 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-tx-25')).toBeInTheDocument()
       expect(screen.queryByTestId('transaction-row-tx-26')).not.toBeInTheDocument()
@@ -111,7 +114,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 30 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       fireEvent.click(screen.getByTestId('pagination-next'))
       expect(screen.queryByTestId('transaction-row-tx-1')).not.toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-tx-26')).toBeInTheDocument()
@@ -121,7 +124,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 30 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}` }),
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       expect(screen.getByTestId('pagination-prev')).toBeDisabled()
     })
 
@@ -129,9 +132,32 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 30 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}` }),
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       fireEvent.click(screen.getByTestId('pagination-next'))
       expect(screen.getByTestId('pagination-next')).toBeDisabled()
+    })
+
+    it('resets page to 0 when filter.category changes', async () => {
+      const manyTxns = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `t${i}`, amount: 100 + i, category: i % 2 === 0 ? 'food' : 'transport' })
+      )
+      const foodTxns = manyTxns.filter((t) => t.category === 'food')
+      const { rerender } = render(
+        <TransactionsTable transactions={manyTxns} isLoading={false} filter={defaultFilter} />,
+      )
+      // navigate to page 2
+      fireEvent.click(screen.getByTestId('pagination-next'))
+      expect(screen.getByTestId('pagination-controls')).toHaveTextContent('Page 2 of 2')
+      // change filter.category — parent also narrows transactions to only food
+      rerender(
+        <TransactionsTable
+          transactions={foodTxns}
+          isLoading={false}
+          filter={{ ...defaultFilter, category: 'food' }}
+        />,
+      )
+      // should be back on page 1 (the 15 food txns fit on 1 page)
+      expect(screen.queryByTestId('pagination-controls')).not.toBeInTheDocument()
     })
   })
 
@@ -141,7 +167,7 @@ describe('TransactionsTable', () => {
         createTransaction({ id: 'tx-abc', merchant: 'McDonald\'s' }),
         createTransaction({ id: 'tx-def', merchant: 'Starbucks' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByTestId('transaction-row-tx-abc')).toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-tx-def')).toBeInTheDocument()
@@ -151,7 +177,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ merchant: 'McDonald\'s' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('McDonald\'s')).toBeInTheDocument()
     })
@@ -160,7 +186,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ amount: 5000 }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('₹5,000')).toBeInTheDocument()
     })
@@ -169,7 +195,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ date: '2025-01-15' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('15 Jan')).toBeInTheDocument()
     })
@@ -178,7 +204,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ amount: 123456 }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('₹1,23,456')).toBeInTheDocument()
     })
@@ -187,7 +213,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ amount: 99.99 }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('₹100')).toBeInTheDocument()
     })
@@ -198,7 +224,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ merchant: '', raw_description: 'UPI-TRANSFER-XYZ' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('UPI-TRANSFER-XYZ')).toBeInTheDocument()
     })
@@ -207,7 +233,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ merchant: '', raw_description: 'Fuel Station ABC' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Fuel Station ABC')).toBeInTheDocument()
     })
@@ -219,7 +245,7 @@ describe('TransactionsTable', () => {
           raw_description: 'AMZN-XYZ-123',
         }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Amazon')).toBeInTheDocument()
       expect(screen.queryByText('AMZN-XYZ-123')).not.toBeInTheDocument()
@@ -233,7 +259,7 @@ describe('TransactionsTable', () => {
         createTransaction({ id: 'tx-2' }),
         createTransaction({ id: 'tx-3' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('3 shown')).toBeInTheDocument()
     })
@@ -242,7 +268,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ type: 'credit' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.queryByText(/shown/)).not.toBeInTheDocument()
     })
@@ -251,7 +277,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ id: 'tx-1' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('1 shown')).toBeInTheDocument()
     })
@@ -260,7 +286,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 25 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}` })
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('25 shown')).toBeInTheDocument()
     })
@@ -269,7 +295,7 @@ describe('TransactionsTable', () => {
       const transactions = Array.from({ length: 20 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}` })
       )
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('20 shown')).toBeInTheDocument()
     })
@@ -280,7 +306,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'food' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Food')).toBeInTheDocument()
     })
@@ -293,7 +319,7 @@ describe('TransactionsTable', () => {
         createTransaction({ id: 'tx-4', category: 'shopping' }),
         createTransaction({ id: 'tx-5', category: 'emi_loans' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Food')).toBeInTheDocument()
       expect(screen.getByText('Groceries')).toBeInTheDocument()
@@ -306,7 +332,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'emi_loans' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('EMI')).toBeInTheDocument()
     })
@@ -315,7 +341,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'utilities' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Bills')).toBeInTheDocument()
     })
@@ -324,7 +350,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'entertainment' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Entertainment')).toBeInTheDocument()
     })
@@ -333,7 +359,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'health' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Health')).toBeInTheDocument()
     })
@@ -342,7 +368,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'travel' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Travel')).toBeInTheDocument()
     })
@@ -351,7 +377,7 @@ describe('TransactionsTable', () => {
       const transactions = [
         createTransaction({ category: 'others' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Others')).toBeInTheDocument()
     })
@@ -359,19 +385,19 @@ describe('TransactionsTable', () => {
 
   describe('main container', () => {
     it('renders main container with data-testid="transactions-table"', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByTestId('transactions-table')).toBeInTheDocument()
     })
 
     it('shows "Transactions" title', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Transactions')).toBeInTheDocument()
     })
 
     it('shows "Recent" label', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('Recent')).toBeInTheDocument()
     })
@@ -390,7 +416,7 @@ describe('TransactionsTable', () => {
           createTransaction({ id: `debit-extra-${i + 16}`, type: 'debit' })
         ),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       expect(screen.getByText('25 shown')).toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-debit-1')).toBeInTheDocument()
@@ -408,7 +434,7 @@ describe('TransactionsTable', () => {
           raw_description: 'AMZN-PURCHASE',
         }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
 
       const row = screen.getByTestId('transaction-row-tx-full')
       expect(row).toBeInTheDocument()
@@ -421,7 +447,7 @@ describe('TransactionsTable', () => {
 
   describe('search', () => {
     it('renders search input', () => {
-      render(<TransactionsTable transactions={[createTransaction()]} isLoading={false} />)
+      render(<TransactionsTable transactions={[createTransaction()]} isLoading={false} filter={defaultFilter} />)
       expect(screen.getByTestId('transaction-search')).toBeInTheDocument()
     })
 
@@ -430,7 +456,7 @@ describe('TransactionsTable', () => {
         createTransaction({ id: 'tx-1', merchant: 'Swiggy' }),
         createTransaction({ id: 'tx-2', merchant: 'Uber' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'swiggy' } })
       expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
       expect(screen.queryByTestId('transaction-row-tx-2')).not.toBeInTheDocument()
@@ -441,14 +467,14 @@ describe('TransactionsTable', () => {
         createTransaction({ id: 'tx-1', merchant: '', raw_description: 'UPI-ZOMATO-123' }),
         createTransaction({ id: 'tx-2', merchant: 'Uber', raw_description: 'UPI-UBER-456' }),
       ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
       fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'zomato' } })
       expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
       expect(screen.queryByTestId('transaction-row-tx-2')).not.toBeInTheDocument()
     })
 
     it('shows empty state when search matches nothing', () => {
-      render(<TransactionsTable transactions={[createTransaction({ merchant: 'Swiggy' })]} isLoading={false} />)
+      render(<TransactionsTable transactions={[createTransaction({ merchant: 'Swiggy' })]} isLoading={false} filter={defaultFilter} />)
       fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'zzz' } })
       expect(screen.getByText('No transactions found')).toBeInTheDocument()
     })
@@ -456,13 +482,66 @@ describe('TransactionsTable', () => {
 
   describe('CSV export', () => {
     it('renders export button when transactions exist', () => {
-      render(<TransactionsTable transactions={[createTransaction()]} isLoading={false} />)
+      render(
+        <TransactionsTable
+          transactions={[createTransaction({ id: 't1', amount: 500 })]}
+          isLoading={false}
+          filter={defaultFilter}
+        />,
+      )
       expect(screen.getByTestId('export-csv-btn')).toBeInTheDocument()
     })
 
-    it('does not render export button when no transactions', () => {
-      render(<TransactionsTable transactions={[]} isLoading={false} />)
+    it('hides export button when no transactions', () => {
+      render(<TransactionsTable transactions={[]} isLoading={false} filter={defaultFilter} />)
       expect(screen.queryByTestId('export-csv-btn')).not.toBeInTheDocument()
+    })
+
+    it('exports CSV with correct headers and merchant escaping', () => {
+      const mockClick = vi.fn()
+      const origCreate = document.createElement.bind(document)
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+        if (tag === 'a') {
+          const el = origCreate('a') as HTMLAnchorElement
+          el.click = mockClick
+          return el
+        }
+        return origCreate(tag)
+      })
+      const mockCreateObjectURL = vi.fn().mockReturnValue('blob:fake')
+      const mockRevokeObjectURL = vi.fn()
+      URL.createObjectURL = mockCreateObjectURL
+      URL.revokeObjectURL = mockRevokeObjectURL
+
+      const txn = createTransaction({
+        id: 't1',
+        amount: 999,
+        merchant: 'Say "hello"',
+        category: 'food',
+        type: 'debit',
+        date: '2025-01-15',
+      })
+      render(
+        <TransactionsTable transactions={[txn]} isLoading={false} filter={defaultFilter} />,
+      )
+      fireEvent.click(screen.getByTestId('export-csv-btn'))
+
+      expect(mockCreateObjectURL).toHaveBeenCalledOnce()
+      const blobArg = mockCreateObjectURL.mock.calls[0][0] as Blob
+      expect(blobArg.type).toBe('text/csv')
+
+      // Verify content via FileReader
+      return new Promise<void>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          const text = e.target?.result as string
+          const lines = text.split('\n')
+          expect(lines[0]).toBe('Date,Merchant,Category,Amount,Type')
+          expect(lines[1]).toBe('2025-01-15,"Say ""hello""",food,999,debit')
+          resolve()
+        }
+        reader.readAsText(blobArg)
+      })
     })
   })
 })

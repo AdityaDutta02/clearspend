@@ -2,10 +2,12 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { Transaction, CategorySlug } from '@/types'
+import type { FilterState } from '@/lib/dashboard-data'
 
 export interface TransactionsTableProps {
   transactions: Transaction[]
   isLoading: boolean
+  filter: FilterState
 }
 
 const CATEGORY_COLORS: Record<CategorySlug, string> = {
@@ -42,7 +44,7 @@ function exportCsv(transactions: Transaction[]): void {
   const headers = ['Date', 'Merchant', 'Category', 'Amount', 'Type']
   const rows = transactions.map((t) => [
     t.date,
-    `"${(t.merchant || t.raw_description).replace(/"/g, '""')}"`,
+    `"${t.merchant.replace(/"/g, '""')}"`,
     t.category,
     t.amount.toString(),
     t.type,
@@ -68,7 +70,7 @@ function ShimmerRow(): JSX.Element {
   )
 }
 
-export function TransactionsTable({ transactions, isLoading }: TransactionsTableProps): JSX.Element {
+export function TransactionsTable({ transactions, isLoading, filter }: TransactionsTableProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(0)
 
@@ -88,6 +90,7 @@ export function TransactionsTable({ transactions, isLoading }: TransactionsTable
   }, [debits, searchQuery])
 
   useEffect(() => { setPage(0) }, [visibleTransactions])
+  useEffect(() => { setPage(0) }, [filter.category])
 
   const pageCount = Math.ceil(visibleTransactions.length / PAGE_SIZE)
   const pagedTransactions = visibleTransactions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
