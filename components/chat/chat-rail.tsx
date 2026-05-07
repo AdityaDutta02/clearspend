@@ -245,46 +245,33 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
         }}
       >
         {/* Messages */}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            }}
-          >
+        {messages.map((msg, i) => (
+          <div key={msg.id}>
+            {i > 0 && (
+              <hr style={{ border: 'none', borderTop: '1px solid var(--border, rgba(0,0,0,0.08))', margin: '4px 0' }} />
+            )}
             {msg.role === 'user' ? (
-              <div
+              <p
                 data-testid="chat-user-msg"
                 style={{
-                  background: 'var(--primary, #5e6ad2)',
-                  color: '#fff',
-                  borderRadius: '12px 12px 2px 12px',
-                  padding: '8px 12px',
-                  maxWidth: '85%',
-                  alignSelf: 'flex-end',
                   fontSize: '0.82rem',
-                  lineHeight: 1.5,
+                  lineHeight: 1.55,
+                  color: 'var(--muted, #8a8a8a)',
+                  textAlign: 'right',
+                  margin: '6px 0',
+                  fontWeight: 500,
                 }}
               >
                 {msg.content}
-              </div>
+              </p>
             ) : (
               <div
                 data-testid="chat-assistant-msg"
                 style={{
-                  background: msg.isError
-                    ? 'var(--accent-negative-subtle, rgba(220,38,38,0.07))'
-                    : 'var(--surface-raised, #f2f2f2)',
-                  border: msg.isError
-                    ? '1px solid rgba(220,38,38,0.15)'
-                    : '1px solid var(--border, rgba(0,0,0,0.08))',
-                  borderRadius: '12px 12px 12px 2px',
-                  padding: '8px 12px',
-                  maxWidth: '85%',
-                  color: msg.isError ? 'var(--accent-negative, #dc2626)' : 'var(--text, #0f172a)',
                   fontSize: '0.82rem',
-                  lineHeight: 1.5,
+                  lineHeight: 1.55,
+                  color: msg.isError ? 'var(--accent-negative, #dc2626)' : 'var(--text, #1a1a1a)',
+                  margin: '6px 0',
                 }}
               >
                 {msg.isError ? (
@@ -299,35 +286,21 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
 
         {/* Loading dots */}
         {isLoading && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-start',
-            }}
-          >
+          <div>
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border, rgba(0,0,0,0.08))', margin: '4px 0' }} />
             <div
               data-testid="chat-loading"
               aria-label="Loading response"
-              style={{
-                background: 'var(--surface-raised, #f2f2f2)',
-                border: '1px solid var(--border, rgba(0,0,0,0.08))',
-                borderRadius: '12px 12px 12px 2px',
-                padding: '8px 12px',
-                maxWidth: '85%',
-                alignSelf: 'flex-start',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-              }}
+              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 0' }}
             >
               {[0, 1, 2].map((n) => (
                 <span
                   key={n}
                   style={{
-                    width: 6,
-                    height: 6,
+                    width: 5,
+                    height: 5,
                     borderRadius: '50%',
-                    background: 'var(--muted, #94a3b8)',
+                    background: 'var(--muted, #8a8a8a)',
                     display: 'inline-block',
                     animation: 'chat-dot-bounce 1.2s ease-in-out infinite',
                     animationDelay: `${n * 0.2}s`,
