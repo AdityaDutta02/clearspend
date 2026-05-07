@@ -18,7 +18,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -39,7 +38,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -54,7 +52,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -77,7 +74,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={['2025-01', '2025-02']}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -99,7 +95,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -120,7 +115,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -143,7 +137,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -165,7 +158,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -186,7 +178,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -209,7 +200,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
-        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -236,7 +226,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={mixedCards}
-        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -260,7 +249,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc', 'icici']}
         availableCards={mixedCards}
-        availableCategories={[]}
         filter={filter}
         onChange={onChange}
       />,
@@ -282,7 +270,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['icici']}
         availableCards={cards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -302,7 +289,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['sbi']}
         availableCards={cards}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -319,7 +305,6 @@ describe('FilterBar — select dropdowns', () => {
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={[]}
-        availableCategories={[]}
         filter={defaultFilter}
         onChange={onChange}
       />,
@@ -327,77 +312,17 @@ describe('FilterBar — select dropdowns', () => {
     expect(screen.queryByTestId('card-dropdown')).not.toBeInTheDocument()
   })
 
-  it('category dropdown renders options from availableCategories', () => {
+  it('category dropdown is not present in FilterBar (moved to TransactionsTable)', () => {
     const onChange = vi.fn()
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={[]}
         availableCards={[]}
-        availableCategories={['food', 'transport']}
-        filter={{ month: null, bank: null, statement_id: null, category: null }}
-        onChange={onChange}
-      />,
-    )
-    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
-    expect(catSelect).toBeInTheDocument()
-    const options = Array.from(catSelect.options)
-    expect(options).toHaveLength(3) // "All categories" + 2
-    expect(options[0]).toHaveTextContent('All categories')
-    expect(options[1]).toHaveTextContent('Food & Dining')
-    expect(options[2]).toHaveTextContent('Transport')
-  })
-
-  it('category dropdown is not rendered when availableCategories is empty', () => {
-    const onChange = vi.fn()
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={[]}
-        availableCards={[]}
-        availableCategories={[]}
         filter={{ month: null, bank: null, statement_id: null, category: null }}
         onChange={onChange}
       />,
     )
     expect(screen.queryByTestId('category-dropdown')).not.toBeInTheDocument()
-  })
-
-  it('selecting a category calls onChange with category value', () => {
-    const onChange = vi.fn()
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={[]}
-        availableCards={[]}
-        availableCategories={['food', 'transport']}
-        filter={{ month: null, bank: null, statement_id: null, category: null }}
-        onChange={onChange}
-      />,
-    )
-    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
-    fireEvent.change(catSelect, { target: { value: 'food' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null, bank: null, statement_id: null, category: 'food',
-    })
-  })
-
-  it('clearing category calls onChange with category: null', () => {
-    const onChange = vi.fn()
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={[]}
-        availableCards={[]}
-        availableCategories={['food']}
-        filter={{ month: null, bank: null, statement_id: null, category: 'food' }}
-        onChange={onChange}
-      />,
-    )
-    const catSelect = screen.getByTestId('category-dropdown') as HTMLSelectElement
-    fireEvent.change(catSelect, { target: { value: '' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null, bank: null, statement_id: null, category: null,
-    })
   })
 })

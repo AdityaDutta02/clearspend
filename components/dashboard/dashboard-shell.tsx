@@ -206,7 +206,6 @@ export function DashboardShell({
               availableMonths={availableMonths}
               availableBanks={availableBanks}
               availableCards={availableCards}
-              availableCategories={availableCategories}
               filter={filter}
               onChange={onFilterChange}
             />
@@ -220,7 +219,14 @@ export function DashboardShell({
 
           {/* ── Transactions (full width) ── */}
           <motion.div variants={rowVariants}>
-            <TransactionsTable transactions={filteredTransactions} isLoading={isLoading} filter={filter} />
+            <TransactionsTable
+              transactions={filteredTransactions}
+              isLoading={isLoading}
+              filter={filter}
+              availableCategories={availableCategories}
+              selectedCategory={filter.category}
+              onCategoryChange={(cat) => onFilterChange({ ...filter, category: cat })}
+            />
           </motion.div>
 
           {/* ── Insights Grid ── */}

@@ -47,7 +47,7 @@ export function StatementsModal({ data, token, onClose, onDeleted }: StatementsM
   function getTotalDebit(statementId: string): number {
     return data.transactions
       .filter((t) => t.statement_id === statementId && t.type === 'debit')
-      .reduce((sum, t) => sum + t.amount, 0)
+      .reduce((sum, t) => sum + Number(t.amount), 0)
   }
 
   function getCardLabel(stmt: Statement): string {

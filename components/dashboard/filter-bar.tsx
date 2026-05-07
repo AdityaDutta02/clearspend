@@ -1,14 +1,13 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { BankSlug, CategorySlug } from '@/types'
+import type { BankSlug } from '@/types'
 import type { FilterState, CardDescriptor } from '@/lib/dashboard-data'
 
 export interface FilterBarProps {
   availableMonths: string[]
   availableBanks: BankSlug[]
   availableCards: CardDescriptor[]
-  availableCategories: CategorySlug[]
   filter: FilterState
   onChange: (filter: FilterState) => void
 }
@@ -56,13 +55,7 @@ const activeSelectStyle: React.CSSProperties = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
 }
 
-const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
-  food: 'Food & Dining', groceries: 'Groceries', transport: 'Transport',
-  shopping: 'Shopping', emi_loans: 'EMI & Loans', utilities: 'Bills & Subs',
-  entertainment: 'Entertainment', health: 'Health', travel: 'Travel', others: 'Others',
-}
-
-export function FilterBar({ availableMonths, availableBanks, availableCards, availableCategories, filter, onChange }: FilterBarProps): JSX.Element {
+export function FilterBar({ availableMonths, availableBanks, availableCards, filter, onChange }: FilterBarProps): JSX.Element {
   const handleMonthChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>): void => {
       onChange({ ...filter, month: e.target.value || null })
@@ -88,13 +81,6 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, ava
       if (card) onChange({ ...filter, bank: card.bank, statement_id: val })
     },
     [filter, availableCards, onChange],
-  )
-
-  const handleCategoryChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>): void => {
-      onChange({ ...filter, category: (e.target.value as CategorySlug) || null })
-    },
-    [filter, onChange],
   )
 
   const visibleCards = filter.bank !== null
@@ -150,20 +136,6 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, ava
         </select>
       )}
 
-      {availableCategories.length > 0 && (
-        <select
-          value={filter.category ?? ''}
-          onChange={handleCategoryChange}
-          style={filter.category ? activeSelectStyle : selectStyle}
-          data-testid="category-dropdown"
-          aria-label="Filter by category"
-        >
-          <option value="">All categories</option>
-          {availableCategories.map((cat) => (
-            <option key={cat} value={cat}>{CATEGORY_DISPLAY_NAMES[cat] ?? cat}</option>
-          ))}
-        </select>
-      )}
     </div>
   )
 }

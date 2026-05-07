@@ -8,6 +8,9 @@ export interface TransactionsTableProps {
   transactions: Transaction[]
   isLoading: boolean
   filter: FilterState
+  availableCategories: CategorySlug[]
+  selectedCategory: CategorySlug | null
+  onCategoryChange: (cat: CategorySlug | null) => void
 }
 
 const CATEGORY_COLORS: Record<CategorySlug, string> = {
@@ -26,6 +29,38 @@ const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
   food: 'Food', groceries: 'Groceries', transport: 'Transport',
   shopping: 'Shopping', emi_loans: 'EMI', utilities: 'Bills',
   entertainment: 'Entertainment', health: 'Health', travel: 'Travel', others: 'Others',
+}
+
+const CATEGORY_FILTER_NAMES: Record<CategorySlug, string> = {
+  food: 'Food & Dining', groceries: 'Groceries', transport: 'Transport',
+  shopping: 'Shopping', emi_loans: 'EMI & Loans', utilities: 'Bills & Subs',
+  entertainment: 'Entertainment', health: 'Health', travel: 'Travel', others: 'Others',
+}
+
+const selectStyle: React.CSSProperties = {
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  background: 'rgba(15, 23, 42, 0.05)',
+  border: '1px solid transparent',
+  borderRadius: '999px',
+  padding: '5px 32px 5px 14px',
+  fontSize: '0.775rem',
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  color: 'var(--muted)',
+  cursor: 'pointer',
+  outline: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748B' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 12px center',
+  transition: 'background-color 0.18s ease, color 0.18s ease',
+}
+
+const activeSelectStyle: React.CSSProperties = {
+  ...selectStyle,
+  backgroundColor: 'var(--primary)',
+  color: '#ffffff',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
 }
 
 const PAGE_SIZE = 25
@@ -72,7 +107,14 @@ function ShimmerRow(): JSX.Element {
   )
 }
 
-export function TransactionsTable({ transactions, isLoading, filter }: TransactionsTableProps): JSX.Element {
+export function TransactionsTable({
+  transactions,
+  isLoading,
+  filter,
+  availableCategories = [],
+  selectedCategory = null,
+  onCategoryChange = () => undefined,
+}: TransactionsTableProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(0)
 
@@ -116,6 +158,20 @@ export function TransactionsTable({ transactions, isLoading, filter }: Transacti
               <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500 }}>
                 {visibleTransactions.length} shown
               </span>
+            )}
+            {availableCategories.length > 0 && (
+              <select
+                value={selectedCategory ?? ''}
+                onChange={(e) => onCategoryChange((e.target.value as CategorySlug) || null)}
+                style={selectedCategory ? activeSelectStyle : selectStyle}
+                data-testid="category-dropdown"
+                aria-label="Filter by category"
+              >
+                <option value="">All categories</option>
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>{CATEGORY_FILTER_NAMES[cat] ?? cat}</option>
+                ))}
+              </select>
             )}
             <input
               type="text"
