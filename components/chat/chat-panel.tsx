@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 export interface ChatPanelProps {
   token: string
@@ -23,6 +23,7 @@ export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
   const [question, setQuestion] = useState('')
   const [chatState, setChatState] = useState<ChatState>('idle')
   const [responseText, setResponseText] = useState('')
+  const abortRef = useRef<AbortController | null>(null)
 
   const handleClose = useCallback((): void => {
     setIsOpen(false)
@@ -45,6 +46,10 @@ export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
     const trimmed = question.trim()
     if (!trimmed) return
 
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
+    const { signal } = abortRef.current
+
     setChatState('loading')
     setResponseText('')
 
@@ -56,25 +61,33 @@ export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ question: trimmed }),
+        signal,
       })
 
-      const body = (await res.json()) as ChatApiResponse
+      // Read response body safely — proxy errors may return non-JSON (e.g. 502 HTML)
+      let body: { answer?: string; error?: string } | null = null
+      try {
+        body = (await res.json()) as { answer?: string; error?: string }
+      } catch {
+        // non-JSON body; leave body as null
+      }
 
       if (!res.ok) {
-        const errorBody = body as ChatApiError
-        if (errorBody.error === 'INSUFFICIENT_CREDITS') {
+        const errMsg = body?.error ?? 'An unexpected error occurred.'
+        if (errMsg.includes('INSUFFICIENT_CREDITS') || errMsg === 'INSUFFICIENT_CREDITS') {
+          setChatState('error')
           setResponseText('You need at least 1 credit to send a message.')
         } else {
-          setResponseText(errorBody.error ?? 'An unexpected error occurred.')
+          setChatState('error')
+          setResponseText(errMsg)
         }
-        setChatState('error')
         return
       }
 
-      const successBody = body as ChatApiSuccess
-      setResponseText(successBody.answer)
       setChatState('answered')
-    } catch {
+      setResponseText(body?.answer ?? '')
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setResponseText('An unexpected error occurred. Please try again.')
       setChatState('error')
     }

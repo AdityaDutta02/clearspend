@@ -6,20 +6,20 @@ const mockFetch = vi.fn()
 
 vi.stubGlobal('fetch', mockFetch)
 
-function makeOkResponse(body: Record<string, string>): Response {
+function makeOkResponse(body: object): Partial<Response> {
   return {
     ok: true,
     status: 200,
     json: async () => body,
-  } as unknown as Response
+  }
 }
 
-function makeErrorResponse(body: Record<string, string>, status: number): Response {
+function makeErrorResponse(body: object, status: number): Partial<Response> {
   return {
     ok: false,
     status,
     json: async () => body,
-  } as unknown as Response
+  }
 }
 
 describe('ChatPanel', () => {
@@ -76,7 +76,8 @@ describe('ChatPanel', () => {
   })
 
   it('shows answer on success', async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ answer: 'You spent ₹5,000' }))
+    // cast needed because vi.fn mock doesn't need full Response interface
+    mockFetch.mockResolvedValue(makeOkResponse({ answer: 'You spent ₹5,000' }) as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     fireEvent.click(screen.getByTestId('chat-toggle-btn'))
@@ -91,7 +92,8 @@ describe('ChatPanel', () => {
   })
 
   it('shows INSUFFICIENT_CREDITS message', async () => {
-    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'INSUFFICIENT_CREDITS' }, 402))
+    // cast needed because vi.fn mock doesn't need full Response interface
+    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'INSUFFICIENT_CREDITS' }, 402) as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     fireEvent.click(screen.getByTestId('chat-toggle-btn'))
@@ -108,7 +110,8 @@ describe('ChatPanel', () => {
   })
 
   it('shows generic error', async () => {
-    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'Server down' }, 500))
+    // cast needed because vi.fn mock doesn't need full Response interface
+    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'Server down' }, 500) as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     fireEvent.click(screen.getByTestId('chat-toggle-btn'))
