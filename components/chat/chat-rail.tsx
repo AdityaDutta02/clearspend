@@ -346,11 +346,9 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
             borderTop: '1px solid var(--border, rgba(0,0,0,0.08))',
             padding: '8px 12px 0',
             display: 'flex',
-            flexDirection: 'row',
-            overflowX: 'auto',
+            flexWrap: 'wrap',
             gap: '6px',
             flexShrink: 0,
-            scrollbarWidth: 'none',
           }}
         >
           {SUGGESTIONS.map((s) => (
@@ -368,8 +366,6 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
                 color: 'var(--text-secondary, #334155)',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
               }}
             >
               {s}
