@@ -9,6 +9,7 @@ import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import { UploadZone } from '@/components/upload/upload-zone'
 import { ConfirmModal } from '@/components/upload/confirm-modal'
+import { ChatPanel } from '@/components/chat/chat-panel'
 
 type PageState = 'idle' | 'confirming' | 'analysing' | 'error'
 
@@ -247,6 +248,7 @@ export function HomeClient(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
+      <ChatPanel token={token} />
       <DashboardShell
         data={data}
         filter={filter}
