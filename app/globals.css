@@ -363,3 +363,26 @@ body::before {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
   30% { transform: translateY(-4px); opacity: 1; }
 }
+
+/* v2 shell responsive layout */
+@media (min-width: 1024px) {
+  .dashboard-v2-grid {
+    grid-template-columns: 65fr 35fr;
+  }
+  .chat-rail-col {
+    display: flex;
+  }
+}
+@media (max-width: 1023px) {
+  .chat-rail-col {
+    display: none !important;
+  }
+}
+[data-design="v2"] .bento-main {
+  gap: 20px;
+}
+@media (min-width: 768px) {
+  [data-design="v2"] .bento-main {
+    grid-template-columns: 1fr 1fr;
+  }
+}

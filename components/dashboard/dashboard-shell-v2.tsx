@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import type { DashboardData, CategorySlug } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
+import type { DashboardShellProps } from '@/components/dashboard/dashboard-shell'
 import {
   filterAnalyses,
   computeKpis,
@@ -21,18 +22,6 @@ import { InsightsStrip } from '@/components/dashboard/insights-strip'
 import { StatementsModal } from '@/components/dashboard/statements-modal'
 import { ChatRail } from '@/components/chat/chat-rail'
 import { MobileAskSheet } from '@/components/chat/mobile-ask-sheet'
-
-export interface DashboardShellProps {
-  data: DashboardData
-  filter: FilterState
-  onFilterChange: (filter: FilterState) => void
-  onUploadClick: () => void
-  isLoading: boolean
-  token: string
-  refresh: () => void
-}
-
-export type { DashboardShellProps as DashboardShellV2Props }
 
 export function DashboardShellV2({
   data,
@@ -67,29 +56,6 @@ export function DashboardShellV2({
 
   return (
     <main data-design="v2" data-testid="dashboard-shell-v2">
-      <style>{`
-        @media (min-width: 1024px) {
-          .dashboard-v2-grid {
-            grid-template-columns: 65fr 35fr;
-          }
-        }
-        @media (max-width: 1023px) {
-          .chat-rail-col {
-            display: none;
-          }
-        }
-        .bento-main {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 20px;
-        }
-        @media (min-width: 768px) {
-          .bento-main {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-      `}</style>
-
       {/* Toolbar */}
       <header
         style={{
@@ -227,7 +193,6 @@ export function DashboardShellV2({
             position: 'sticky',
             top: 48,
             height: 'calc(100dvh - 48px)',
-            display: 'flex',
             flexDirection: 'column',
             borderLeft: '1px solid var(--border, rgba(0,0,0,0.08))',
           }}
