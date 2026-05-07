@@ -233,9 +233,12 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: 'row',
+              overflowX: 'auto',
+              flexWrap: 'nowrap',
               gap: '6px',
               marginTop: '8px',
+              paddingBottom: '4px',
             }}
           >
             {SUGGESTIONS.map((s) => (
@@ -249,10 +252,11 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
                   border: '1px solid var(--border, rgba(0,0,0,0.08))',
                   borderRadius: '8px',
                   padding: '8px 12px',
-                  fontSize: '0.8rem',
+                  fontSize: '0.72rem',
                   color: 'var(--text-secondary, #334155)',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {s}
@@ -317,29 +321,41 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
         {/* Loading dots */}
         {isLoading && (
           <div
-            data-testid="chat-loading"
-            aria-label="Loading response"
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '8px 4px',
+              justifyContent: 'flex-start',
             }}
           >
-            {[0, 1, 2].map((n) => (
-              <span
-                key={n}
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: 'var(--muted, #94a3b8)',
-                  display: 'inline-block',
-                  animation: 'chat-dot-bounce 1.2s ease-in-out infinite',
-                  animationDelay: `${n * 0.2}s`,
-                }}
-              />
-            ))}
+            <div
+              data-testid="chat-loading"
+              aria-label="Loading response"
+              style={{
+                background: 'var(--surface-raised, #f2f2f2)',
+                border: '1px solid var(--border, rgba(0,0,0,0.08))',
+                borderRadius: '12px 12px 12px 2px',
+                padding: '8px 12px',
+                maxWidth: '85%',
+                alignSelf: 'flex-start',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+              }}
+            >
+              {[0, 1, 2].map((n) => (
+                <span
+                  key={n}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: 'var(--muted, #94a3b8)',
+                    display: 'inline-block',
+                    animation: 'chat-dot-bounce 1.2s ease-in-out infinite',
+                    animationDelay: `${n * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         )}
       </div>
