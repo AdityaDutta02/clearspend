@@ -365,6 +365,9 @@ body::before {
 }
 
 /* v2 shell responsive layout */
+.dashboard-v2-grid {
+  grid-template-columns: 1fr;
+}
 @media (min-width: 1024px) {
   .dashboard-v2-grid {
     grid-template-columns: 65fr 35fr;
@@ -372,6 +375,9 @@ body::before {
   .chat-rail-col {
     display: flex;
     height: 100%;
+  }
+  .mobile-ask-float-btn {
+    display: none !important;
   }
 }
 @media (max-width: 1023px) {

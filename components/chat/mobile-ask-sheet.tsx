@@ -28,6 +28,7 @@ export function MobileAskSheet({ token }: MobileAskSheetProps): JSX.Element {
       {/* Floating button */}
       <button
         type="button"
+        className="mobile-ask-float-btn"
         data-testid="mobile-ask-btn"
         onClick={() => setIsOpen(true)}
         aria-label="Open AI chat"

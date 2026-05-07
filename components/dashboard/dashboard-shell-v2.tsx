@@ -153,7 +153,6 @@ export function DashboardShellV2({
         className="dashboard-v2-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr',
           height: 'calc(100dvh - 48px)',
           overflow: 'hidden',
         }}
