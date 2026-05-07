@@ -25,7 +25,7 @@ export function HomeClient(): JSX.Element {
 
   const [pageState, setPageState] = useState<PageState>('idle')
   const [pendingUpload, setPendingUpload] = useState<PendingUpload | null>(null)
-  const [filter, setFilter] = useState<FilterState>({ month: null, bank: null, statement_id: null })
+  const [filter, setFilter] = useState<FilterState>({ month: null, bank: null, statement_id: null, category: null })
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [analyseError, setAnalyseError] = useState<string | null>(null)
   const [showUploadModal, setShowUploadModal] = useState<boolean>(false)

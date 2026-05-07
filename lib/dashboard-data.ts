@@ -4,6 +4,7 @@ export interface FilterState {
   month: string | null // "YYYY-MM" or null for all
   bank: BankSlug | null // or null for all
   statement_id: string | null // null = all cards
+  category: CategorySlug | null // null = all categories
 }
 
 export type CardDescriptor = {
@@ -179,6 +180,10 @@ export function getFilteredTransactions(data: DashboardData, filter: FilterState
   })
   const statementIds = new Set(filteredStatements.map((s) => s.id))
   return data.transactions
-    .filter((t) => statementIds.has(t.statement_id))
+    .filter((t) => {
+      if (!statementIds.has(t.statement_id)) return false
+      if (filter.category !== null && t.category !== filter.category) return false
+      return true
+    })
     .sort((a, b) => b.amount - a.amount)
 }
