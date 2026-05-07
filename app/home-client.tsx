@@ -7,8 +7,13 @@ import type { FilterState } from '@/lib/dashboard-data'
 import { useEmbedToken } from '@/hooks/use-embed-token'
 import { useDashboardData } from '@/hooks/use-dashboard-data'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
+import { DashboardShellV2 } from '@/components/dashboard/dashboard-shell-v2'
 import { UploadZone } from '@/components/upload/upload-zone'
 import { ConfirmModal } from '@/components/upload/confirm-modal'
+
+function getDesignVariant(): 'v1' | 'v2' {
+  return process.env.NEXT_PUBLIC_DESIGN_VARIANT === 'v1' ? 'v1' : 'v2'
+}
 
 type PageState = 'idle' | 'confirming' | 'analysing' | 'error'
 
@@ -247,15 +252,27 @@ export function HomeClient(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <DashboardShell
-        data={data}
-        filter={filter}
-        onFilterChange={handleFilterChange}
-        onUploadClick={handleUploadClick}
-        isLoading={dataLoading}
-        token={token}
-        refresh={refresh}
-      />
+      {getDesignVariant() === 'v2' ? (
+        <DashboardShellV2
+          data={data}
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          onUploadClick={handleUploadClick}
+          isLoading={dataLoading}
+          token={token}
+          refresh={refresh}
+        />
+      ) : (
+        <DashboardShell
+          data={data}
+          filter={filter}
+          onFilterChange={handleFilterChange}
+          onUploadClick={handleUploadClick}
+          isLoading={dataLoading}
+          token={token}
+          refresh={refresh}
+        />
+      )}
 
       {analyseError !== null && (
         <div
