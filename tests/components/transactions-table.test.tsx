@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { TransactionsTable } from '@/components/dashboard/transactions-table'
 import type { Transaction } from '@/types'
 
@@ -84,31 +84,54 @@ describe('TransactionsTable', () => {
     })
   })
 
-  describe('20-item limit', () => {
-    it('renders only first 20 debit transactions when given more', () => {
+  describe('pagination', () => {
+    it('shows all debits when count is <= 25 (no pagination controls)', () => {
       const transactions = Array.from({ length: 25 }, (_, i) =>
-        createTransaction({
-          id: `tx-${i + 1}`,
-          merchant: `Merchant ${i + 1}`,
-        })
+        createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
       )
       render(<TransactionsTable transactions={transactions} isLoading={false} />)
-
-      for (let i = 1; i <= 20; i++) {
+      for (let i = 1; i <= 25; i++) {
         expect(screen.getByTestId(`transaction-row-tx-${i}`)).toBeInTheDocument()
       }
-
-      expect(screen.queryByTestId('transaction-row-tx-21')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('transaction-row-tx-25')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('pagination-controls')).not.toBeInTheDocument()
     })
 
-    it('shows exactly 20 when given 25 debits', () => {
-      const transactions = Array.from({ length: 25 }, (_, i) =>
-        createTransaction({ id: `tx-${i + 1}` })
+    it('shows only first 25 debits on page 1 when given 30', () => {
+      const transactions = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
       )
       render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
+      expect(screen.getByTestId('transaction-row-tx-25')).toBeInTheDocument()
+      expect(screen.queryByTestId('transaction-row-tx-26')).not.toBeInTheDocument()
+      expect(screen.getByTestId('pagination-controls')).toBeInTheDocument()
+    })
 
-      expect(screen.getByText('20 shown')).toBeInTheDocument()
+    it('shows next page after clicking Next', () => {
+      const transactions = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `tx-${i + 1}`, merchant: `Merchant ${i + 1}` }),
+      )
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      fireEvent.click(screen.getByTestId('pagination-next'))
+      expect(screen.queryByTestId('transaction-row-tx-1')).not.toBeInTheDocument()
+      expect(screen.getByTestId('transaction-row-tx-26')).toBeInTheDocument()
+    })
+
+    it('Prev button is disabled on first page', () => {
+      const transactions = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `tx-${i + 1}` }),
+      )
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      expect(screen.getByTestId('pagination-prev')).toBeDisabled()
+    })
+
+    it('Next button is disabled on last page', () => {
+      const transactions = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `tx-${i + 1}` }),
+      )
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      fireEvent.click(screen.getByTestId('pagination-next'))
+      expect(screen.getByTestId('pagination-next')).toBeDisabled()
     })
   })
 
@@ -233,6 +256,15 @@ describe('TransactionsTable', () => {
       expect(screen.getByText('1 shown')).toBeInTheDocument()
     })
 
+    it('shows 25 shown when given 25 debits', () => {
+      const transactions = Array.from({ length: 25 }, (_, i) =>
+        createTransaction({ id: `tx-${i + 1}` })
+      )
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+
+      expect(screen.getByText('25 shown')).toBeInTheDocument()
+    })
+
     it('shows correct count when at limit (20)', () => {
       const transactions = Array.from({ length: 20 }, (_, i) =>
         createTransaction({ id: `tx-${i + 1}` })
@@ -346,7 +378,7 @@ describe('TransactionsTable', () => {
   })
 
   describe('integration scenarios', () => {
-    it('handles mix of credits and debits, showing only debits up to 20', () => {
+    it('handles mix of credits and debits, showing all debits up to page size', () => {
       const transactions = [
         ...Array.from({ length: 15 }, (_, i) =>
           createTransaction({ id: `debit-${i + 1}`, type: 'debit' })
@@ -360,10 +392,8 @@ describe('TransactionsTable', () => {
       ]
       render(<TransactionsTable transactions={transactions} isLoading={false} />)
 
-      expect(screen.getByText('20 shown')).toBeInTheDocument()
+      expect(screen.getByText('25 shown')).toBeInTheDocument()
       expect(screen.getByTestId('transaction-row-debit-1')).toBeInTheDocument()
-      expect(screen.getByTestId('transaction-row-debit-extra-20')).toBeInTheDocument()
-      expect(screen.queryByTestId('transaction-row-debit-extra-21')).not.toBeInTheDocument()
       expect(screen.queryByTestId('transaction-row-credit-1')).not.toBeInTheDocument()
     })
 
@@ -386,6 +416,53 @@ describe('TransactionsTable', () => {
       expect(screen.getByText('Amazon.in')).toBeInTheDocument()
       expect(screen.getByText('Shopping')).toBeInTheDocument()
       expect(screen.getByText('₹15,000')).toBeInTheDocument()
+    })
+  })
+
+  describe('search', () => {
+    it('renders search input', () => {
+      render(<TransactionsTable transactions={[createTransaction()]} isLoading={false} />)
+      expect(screen.getByTestId('transaction-search')).toBeInTheDocument()
+    })
+
+    it('filters transactions by merchant name', () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', merchant: 'Swiggy' }),
+        createTransaction({ id: 'tx-2', merchant: 'Uber' }),
+      ]
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'swiggy' } })
+      expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
+      expect(screen.queryByTestId('transaction-row-tx-2')).not.toBeInTheDocument()
+    })
+
+    it('filters transactions by raw_description', () => {
+      const transactions = [
+        createTransaction({ id: 'tx-1', merchant: '', raw_description: 'UPI-ZOMATO-123' }),
+        createTransaction({ id: 'tx-2', merchant: 'Uber', raw_description: 'UPI-UBER-456' }),
+      ]
+      render(<TransactionsTable transactions={transactions} isLoading={false} />)
+      fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'zomato' } })
+      expect(screen.getByTestId('transaction-row-tx-1')).toBeInTheDocument()
+      expect(screen.queryByTestId('transaction-row-tx-2')).not.toBeInTheDocument()
+    })
+
+    it('shows empty state when search matches nothing', () => {
+      render(<TransactionsTable transactions={[createTransaction({ merchant: 'Swiggy' })]} isLoading={false} />)
+      fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'zzz' } })
+      expect(screen.getByText('No transactions found')).toBeInTheDocument()
+    })
+  })
+
+  describe('CSV export', () => {
+    it('renders export button when transactions exist', () => {
+      render(<TransactionsTable transactions={[createTransaction()]} isLoading={false} />)
+      expect(screen.getByTestId('export-csv-btn')).toBeInTheDocument()
+    })
+
+    it('does not render export button when no transactions', () => {
+      render(<TransactionsTable transactions={[]} isLoading={false} />)
+      expect(screen.queryByTestId('export-csv-btn')).not.toBeInTheDocument()
     })
   })
 })

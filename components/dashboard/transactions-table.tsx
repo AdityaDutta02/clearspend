@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { Transaction, CategorySlug } from '@/types'
 
 export interface TransactionsTableProps {
@@ -25,6 +26,8 @@ const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
   entertainment: 'Entertainment', health: 'Health', travel: 'Travel', others: 'Others',
 }
 
+const PAGE_SIZE = 25
+
 function formatDate(dateStr: string): string {
   const [, month, day] = dateStr.split('-').map(Number)
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -33,6 +36,25 @@ function formatDate(dateStr: string): string {
 
 function formatInr(amount: number): string {
   return `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+}
+
+function exportCsv(transactions: Transaction[]): void {
+  const headers = ['Date', 'Merchant', 'Category', 'Amount', 'Type']
+  const rows = transactions.map((t) => [
+    t.date,
+    `"${(t.merchant || t.raw_description).replace(/"/g, '""')}"`,
+    t.category,
+    t.amount.toString(),
+    t.type,
+  ])
+  const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'clearspend-transactions.csv'
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 function ShimmerRow(): JSX.Element {
@@ -47,9 +69,32 @@ function ShimmerRow(): JSX.Element {
 }
 
 export function TransactionsTable({ transactions, isLoading }: TransactionsTableProps): JSX.Element {
-  const debits = transactions
-    .filter((t) => t.type === 'debit')
-    .slice(0, 20)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [page, setPage] = useState(0)
+
+  const debits = useMemo(
+    () => transactions.filter((t) => t.type === 'debit'),
+    [transactions],
+  )
+
+  const visibleTransactions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return debits
+    return debits.filter(
+      (t) =>
+        t.merchant.toLowerCase().includes(q) ||
+        t.raw_description.toLowerCase().includes(q),
+    )
+  }, [debits, searchQuery])
+
+  useEffect(() => { setPage(0) }, [visibleTransactions])
+
+  const pageCount = Math.ceil(visibleTransactions.length / PAGE_SIZE)
+  const pagedTransactions = visibleTransactions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>): void => {
+    setSearchQuery(e.target.value)
+  }, [])
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column' }} data-testid="transactions-table">
@@ -58,15 +103,59 @@ export function TransactionsTable({ transactions, isLoading }: TransactionsTable
         <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '4px' }}>
           Recent
         </p>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
           <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
             Transactions
           </p>
-          {debits.length > 0 && (
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500 }}>
-              {debits.length} shown
-            </span>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {visibleTransactions.length > 0 && (
+              <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500 }}>
+                {visibleTransactions.length} shown
+              </span>
+            )}
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search transactions…"
+              data-testid="transaction-search"
+              style={{
+                appearance: 'none',
+                background: 'rgba(15,23,42,0.05)',
+                border: '1px solid transparent',
+                borderRadius: '999px',
+                padding: '5px 14px',
+                fontSize: '0.775rem',
+                fontFamily: 'inherit',
+                color: 'var(--text)',
+                outline: 'none',
+                width: '160px',
+              }}
+            />
+            {visibleTransactions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => exportCsv(visibleTransactions)}
+                data-testid="export-csv-btn"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '5px 12px',
+                  borderRadius: '999px',
+                  background: 'rgba(15,23,42,0.05)',
+                  border: '1px solid transparent',
+                  cursor: 'pointer',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  color: 'var(--muted)',
+                }}
+              >
+                Export CSV
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -74,13 +163,13 @@ export function TransactionsTable({ transactions, isLoading }: TransactionsTable
         <div aria-hidden="true" data-testid="shimmer-block">
           {Array.from({ length: 6 }, (_, i) => <ShimmerRow key={i} />)}
         </div>
-      ) : debits.length === 0 ? (
+      ) : pagedTransactions.length === 0 ? (
         <div style={{ padding: '24px 0', textAlign: 'center' }}>
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No transactions found</p>
         </div>
       ) : (
         <div>
-          {debits.map((tx) => (
+          {pagedTransactions.map((tx) => (
             <div
               key={tx.id}
               data-testid={`transaction-row-${tx.id}`}
@@ -120,6 +209,45 @@ export function TransactionsTable({ transactions, isLoading }: TransactionsTable
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {pageCount > 1 && (
+        <div
+          data-testid="pagination-controls"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '12px' }}
+        >
+          <button
+            type="button"
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page === 0}
+            data-testid="pagination-prev"
+            style={{
+              padding: '4px 12px', borderRadius: '999px', border: '1px solid var(--border)',
+              background: 'none', cursor: page === 0 ? 'default' : 'pointer',
+              fontSize: '0.75rem', fontFamily: 'inherit', color: 'var(--muted)',
+              opacity: page === 0 ? 0.4 : 1,
+            }}
+          >
+            Prev
+          </button>
+          <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+            Page {page + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page === pageCount - 1}
+            data-testid="pagination-next"
+            style={{
+              padding: '4px 12px', borderRadius: '999px', border: '1px solid var(--border)',
+              background: 'none', cursor: page === pageCount - 1 ? 'default' : 'pointer',
+              fontSize: '0.75rem', fontFamily: 'inherit', color: 'var(--muted)',
+              opacity: page === pageCount - 1 ? 0.4 : 1,
+            }}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
