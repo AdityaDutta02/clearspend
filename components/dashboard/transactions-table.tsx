@@ -228,7 +228,7 @@ export function TransactionsTable({
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No transactions found</p>
         </div>
       ) : (
-        <div>
+        <div className="transactions-rows">
           {pagedTransactions.map((tx) => (
             <div
               key={tx.id}

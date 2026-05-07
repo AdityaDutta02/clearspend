@@ -371,6 +371,7 @@ body::before {
   }
   .chat-rail-col {
     display: flex;
+    height: 100%;
   }
 }
 @media (max-width: 1023px) {
@@ -385,4 +386,36 @@ body::before {
   [data-design="v2"] .bento-main {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* v2 transactions 2-col grid */
+@media (min-width: 1024px) {
+  [data-design="v2"] .transactions-rows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 20px;
+  }
+  [data-design="v2"] .transactions-rows > div {
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+/* v2 insights compact */
+[data-design="v2"] [data-testid="insights-strip"] .insights-grid {
+  gap: 8px;
+}
+@media (min-width: 768px) {
+  [data-design="v2"] [data-testid="insights-strip"] .insights-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1280px) {
+  [data-design="v2"] [data-testid="insights-strip"] .insights-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+[data-design="v2"] [data-testid="insight-card"] > div {
+  padding: 10px 12px;
+  border-radius: 8px;
+  gap: 8px;
 }

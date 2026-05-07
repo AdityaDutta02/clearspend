@@ -154,7 +154,8 @@ export function DashboardShellV2({
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr',
-          minHeight: 'calc(100dvh - 48px)',
+          height: 'calc(100dvh - 48px)',
+          overflow: 'hidden',
         }}
       >
         {/* Content column */}
@@ -165,6 +166,7 @@ export function DashboardShellV2({
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',
+            minHeight: 0,
           }}
         >
           <KpiCards metrics={kpiMetrics} isLoading={isLoading} />
@@ -174,6 +176,8 @@ export function DashboardShellV2({
             <CategoryChart analyses={filteredAnalyses} isLoading={isLoading} />
           </div>
 
+          <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
+
           <TransactionsTable
             transactions={filteredTransactions}
             isLoading={isLoading}
@@ -182,19 +186,16 @@ export function DashboardShellV2({
             selectedCategory={filter.category}
             onCategoryChange={(cat) => onFilterChange({ ...filter, category: cat })}
           />
-
-          <InsightsStrip analyses={filteredAnalyses} isLoading={isLoading} />
         </div>
 
         {/* Rail column - hidden on mobile via .chat-rail-col */}
         <div
           className="chat-rail-col"
           style={{
-            position: 'sticky',
-            top: 48,
-            height: 'calc(100dvh - 48px)',
             flexDirection: 'column',
             borderLeft: '1px solid var(--border, rgba(0,0,0,0.08))',
+            overflow: 'hidden',
+            minHeight: 0,
           }}
         >
           <ChatRail token={token} style={{ height: '100%' }} />
