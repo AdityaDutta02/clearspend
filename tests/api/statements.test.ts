@@ -44,5 +44,10 @@ describe('DELETE /api/statements/[id]', () => {
     expect(dbDelete).toHaveBeenCalledWith('transactions', 'txn-2', 'test-token')
     expect(dbDelete).toHaveBeenCalledWith('analyses', 'analysis-1', 'test-token')
     expect(dbDelete).toHaveBeenCalledWith('statements', 'stmt-1', 'test-token')
+
+    // Verify cascade order: statement deleted last
+    const deleteCalls = vi.mocked(dbDelete).mock.calls
+    const stmtDeleteIndex = deleteCalls.findIndex((c) => c[0] === 'statements')
+    expect(stmtDeleteIndex).toBe(deleteCalls.length - 1)
   })
 })
