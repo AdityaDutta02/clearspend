@@ -302,84 +302,26 @@ describe('TransactionsTable', () => {
   })
 
   describe('category chip', () => {
-    it('renders category display name in each row', () => {
-      const transactions = [
-        createTransaction({ category: 'food' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Food')).toBeInTheDocument()
-    })
-
-    it('shows correct display names for different categories', () => {
-      const transactions = [
-        createTransaction({ id: 'tx-1', category: 'food' }),
-        createTransaction({ id: 'tx-2', category: 'groceries' }),
-        createTransaction({ id: 'tx-3', category: 'transport' }),
-        createTransaction({ id: 'tx-4', category: 'shopping' }),
-        createTransaction({ id: 'tx-5', category: 'emi_loans' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Food')).toBeInTheDocument()
-      expect(screen.getByText('Groceries')).toBeInTheDocument()
-      expect(screen.getByText('Transport')).toBeInTheDocument()
-      expect(screen.getByText('Shopping')).toBeInTheDocument()
-      expect(screen.getByText('EMI')).toBeInTheDocument()
-    })
-
-    it('shows emi_loans as "EMI"', () => {
-      const transactions = [
-        createTransaction({ category: 'emi_loans' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('EMI')).toBeInTheDocument()
-    })
-
-    it('shows utilities as "Bills"', () => {
-      const transactions = [
-        createTransaction({ category: 'utilities' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Bills')).toBeInTheDocument()
-    })
-
-    it('shows entertainment category', () => {
-      const transactions = [
-        createTransaction({ category: 'entertainment' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Entertainment')).toBeInTheDocument()
-    })
-
-    it('shows health category', () => {
-      const transactions = [
-        createTransaction({ category: 'health' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Health')).toBeInTheDocument()
-    })
-
-    it('shows travel category', () => {
-      const transactions = [
-        createTransaction({ category: 'travel' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Travel')).toBeInTheDocument()
-    })
-
-    it('shows others category', () => {
-      const transactions = [
-        createTransaction({ category: 'others' }),
-      ]
-      render(<TransactionsTable transactions={transactions} isLoading={false} filter={defaultFilter} />)
-
-      expect(screen.getByText('Others')).toBeInTheDocument()
+    it.each([
+      ['food', 'Food'],
+      ['groceries', 'Groceries'],
+      ['transport', 'Transport'],
+      ['shopping', 'Shopping'],
+      ['emi_loans', 'EMI'],
+      ['utilities', 'Bills'],
+      ['entertainment', 'Entertainment'],
+      ['health', 'Health'],
+      ['travel', 'Travel'],
+      ['others', 'Others'],
+    ] as const)('shows display name "%s" → "%s"', (category, label) => {
+      render(
+        <TransactionsTable
+          transactions={[createTransaction({ id: 't1', category })]}
+          isLoading={false}
+          filter={defaultFilter}
+        />,
+      )
+      expect(screen.getByText(label)).toBeInTheDocument()
     })
   })
 
@@ -477,6 +419,22 @@ describe('TransactionsTable', () => {
       render(<TransactionsTable transactions={[createTransaction({ merchant: 'Swiggy' })]} isLoading={false} filter={defaultFilter} />)
       fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'zzz' } })
       expect(screen.getByText('No transactions found')).toBeInTheDocument()
+    })
+
+    it('resets page to 0 when search query changes', async () => {
+      const manyTxns = Array.from({ length: 30 }, (_, i) =>
+        createTransaction({ id: `t${i}`, amount: 100 + i, merchant: i < 5 ? 'Zomato' : `Merchant ${i}` })
+      )
+      render(
+        <TransactionsTable transactions={manyTxns} isLoading={false} filter={defaultFilter} />,
+      )
+      // navigate to page 2
+      fireEvent.click(screen.getByTestId('pagination-next'))
+      expect(screen.getByTestId('pagination-controls')).toHaveTextContent('Page 2 of 2')
+      // search narrows results
+      fireEvent.change(screen.getByTestId('transaction-search'), { target: { value: 'Zomato' } })
+      // pagination controls should disappear (only 5 results fit on 1 page)
+      expect(screen.queryByTestId('pagination-controls')).not.toBeInTheDocument()
     })
   })
 

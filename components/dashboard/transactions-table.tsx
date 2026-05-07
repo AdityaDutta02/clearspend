@@ -31,7 +31,9 @@ const CATEGORY_DISPLAY_NAMES: Record<CategorySlug, string> = {
 const PAGE_SIZE = 25
 
 function formatDate(dateStr: string): string {
-  const [, month, day] = dateStr.split('-').map(Number)
+  const parts = dateStr.split('-').map(Number)
+  if (parts.length < 3 || parts.some(isNaN)) return dateStr
+  const [, month, day] = parts
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return `${day} ${MONTHS[month - 1]}`
 }
@@ -56,7 +58,7 @@ function exportCsv(transactions: Transaction[]): void {
   a.href = url
   a.download = 'clearspend-transactions.csv'
   a.click()
-  URL.revokeObjectURL(url)
+  setTimeout(() => URL.revokeObjectURL(url), 100)
 }
 
 function ShimmerRow(): JSX.Element {
@@ -90,7 +92,6 @@ export function TransactionsTable({ transactions, isLoading, filter }: Transacti
   }, [debits, searchQuery])
 
   useEffect(() => { setPage(0) }, [visibleTransactions])
-  useEffect(() => { setPage(0) }, [filter.category])
 
   const pageCount = Math.ceil(visibleTransactions.length / PAGE_SIZE)
   const pagedTransactions = visibleTransactions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
