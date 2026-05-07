@@ -63,7 +63,7 @@ const activeSelectStyle: React.CSSProperties = {
   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 function formatDate(dateStr: string): string {
   const parts = dateStr.split('-').map(Number)

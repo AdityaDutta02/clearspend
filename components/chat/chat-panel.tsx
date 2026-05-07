@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import type { ReactNode } from 'react'
 
 export interface ChatPanelProps {
   token: string
@@ -12,246 +13,523 @@ interface Message {
   isError?: boolean
 }
 
+const SUGGESTIONS = [
+  'How much did I spend this month?',
+  'What is my biggest expense category?',
+  'Which merchants do I spend the most at?',
+  'How does this month compare to last month?',
+  'How can I reduce my spending?',
+  'What are my recurring subscriptions?',
+]
+
+// Lightweight markdown renderer — handles ### headings, **bold**, - bullets, `code`
+function renderMarkdown(text: string): ReactNode {
+  const lines = text.split('\n')
+  const nodes: ReactNode[] = []
+  let listItems: string[] = []
+
+  function flushList() {
+    if (listItems.length === 0) return
+    nodes.push(
+      <ul key={`ul-${nodes.length}`} style={{ margin: '6px 0', paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {listItems.map((item, i) => (
+          <li key={i} style={{ fontSize: '0.82rem', lineHeight: 1.55, color: 'var(--text, #0f172a)' }}>
+            {renderInline(item)}
+          </li>
+        ))}
+      </ul>
+    )
+    listItems = []
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Bullet list item
+    if (/^[-*]\s+/.test(line)) {
+      listItems.push(line.replace(/^[-*]\s+/, ''))
+      continue
+    }
+
+    flushList()
+
+    // ### heading
+    if (line.startsWith('### ')) {
+      nodes.push(
+        <div key={i} style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--primary, #2563eb)', marginTop: '10px', marginBottom: '2px', letterSpacing: '-0.01em' }}>
+          {line.slice(4)}
+        </div>
+      )
+      continue
+    }
+
+    // ## heading
+    if (line.startsWith('## ')) {
+      nodes.push(
+        <div key={i} style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text, #0f172a)', marginTop: '10px', marginBottom: '2px', letterSpacing: '-0.015em' }}>
+          {line.slice(3)}
+        </div>
+      )
+      continue
+    }
+
+    // Empty line → small gap
+    if (line.trim() === '') {
+      nodes.push(<div key={i} style={{ height: '4px' }} />)
+      continue
+    }
+
+    // Normal paragraph
+    nodes.push(
+      <div key={i} style={{ fontSize: '0.82rem', lineHeight: 1.6, color: 'var(--text, #0f172a)' }}>
+        {renderInline(line)}
+      </div>
+    )
+  }
+
+  flushList()
+  return <>{nodes}</>
+}
+
+function renderInline(text: string): ReactNode {
+  // Split on **bold** and `code`
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/)
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} style={{ fontWeight: 700, color: 'var(--text, #0f172a)' }}>{part.slice(2, -2)}</strong>
+        }
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return <code key={i} style={{ background: 'rgba(15,23,42,0.07)', borderRadius: '3px', padding: '1px 4px', fontSize: '0.78rem', fontFamily: 'monospace' }}>{part.slice(1, -1)}</code>
+        }
+        return <span key={i}>{part}</span>
+      })}
+    </>
+  )
+}
+
+// How many past exchanges to show in the thread (each exchange = user + assistant)
+const VISIBLE_EXCHANGES = 2
+
 export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([])
   const [question, setQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
-  const bottomRef = useRef<HTMLDivElement | null>(null)
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const threadRef = useRef<HTMLDivElement | null>(null)
+
+  const filteredSuggestions = useMemo(() => {
+    const q = question.trim().toLowerCase()
+    if (!q) return SUGGESTIONS
+    return SUGGESTIONS.filter((s) => s.toLowerCase().includes(q))
+  }, [question])
 
   useEffect(() => {
-    if (typeof bottomRef.current?.scrollIntoView === 'function') {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (threadRef.current && typeof threadRef.current.scrollTo === 'function') {
+      threadRef.current.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' })
     }
   }, [messages, isLoading])
 
-  const handleSend = useCallback(async (): Promise<void> => {
-    const trimmed = question.trim()
-    if (!trimmed || isLoading) return
+  const submit = useCallback(
+    async (text: string): Promise<void> => {
+      const trimmed = text.trim()
+      if (!trimmed || isLoading) return
 
-    setMessages((prev) => [...prev, { role: 'user', content: trimmed }])
-    setQuestion('')
-    setIsLoading(true)
+      setShowSuggestions(false)
+      setQuestion('')
+      setMessages((prev) => [...prev, { role: 'user', content: trimmed }])
+      setIsLoading(true)
 
-    abortRef.current?.abort()
-    abortRef.current = new AbortController()
-    const { signal } = abortRef.current
+      abortRef.current?.abort()
+      abortRef.current = new AbortController()
+      const { signal } = abortRef.current
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ question: trimmed }),
-        signal,
-      })
-
-      let body: { answer?: string; error?: string } | null = null
       try {
-        body = (await res.json()) as { answer?: string; error?: string }
-      } catch {
-        // non-JSON body
-      }
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ question: trimmed }),
+          signal,
+        })
 
-      if (!res.ok) {
-        const errMsg = body?.error ?? 'An unexpected error occurred.'
-        const displayMsg =
-          errMsg.includes('INSUFFICIENT_CREDITS') || errMsg === 'INSUFFICIENT_CREDITS'
-            ? 'You need at least 1 credit to send a message.'
-            : errMsg
-        setMessages((prev) => [...prev, { role: 'assistant', content: displayMsg, isError: true }])
-      } else {
-        setMessages((prev) => [...prev, { role: 'assistant', content: body?.answer ?? '' }])
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: 'An unexpected error occurred. Please try again.', isError: true },
-      ])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [question, token, isLoading])
+        if (!res.ok || !res.body) {
+          let errMsg = 'An unexpected error occurred.'
+          try {
+            const json = await res.json() as { error?: string }
+            errMsg = json.error ?? errMsg
+          } catch { /* non-JSON */ }
+          const displayMsg =
+            errMsg.includes('INSUFFICIENT_CREDITS') || errMsg === 'INSUFFICIENT_CREDITS'
+              ? 'You need at least 1 credit to send a message.'
+              : errMsg
+          setMessages((prev) => [...prev, { role: 'assistant', content: displayMsg, isError: true }])
+          return
+        }
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        void handleSend()
+        // Read SSE stream
+        const reader = res.body.getReader()
+        const decoder = new TextDecoder()
+        let buf = ''
+        let assistantContent = ''
+        let msgAdded = false
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          buf += decoder.decode(value, { stream: true })
+          const lines = buf.split('\n')
+          buf = lines.pop() ?? ''
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const raw = line.slice(6).trim()
+            if (raw === '[DONE]') continue
+
+            try {
+              const parsed = JSON.parse(raw) as { delta?: string; error?: string }
+
+              if (parsed.error) {
+                const displayMsg =
+                  parsed.error.includes('INSUFFICIENT_CREDITS')
+                    ? 'You need at least 1 credit to send a message.'
+                    : parsed.error
+                setMessages((prev) => [...prev, { role: 'assistant', content: displayMsg, isError: true }])
+                msgAdded = true
+                continue
+              }
+
+              if (parsed.delta) {
+                assistantContent += parsed.delta
+                if (!msgAdded) {
+                  setMessages((prev) => [...prev, { role: 'assistant', content: assistantContent }])
+                  msgAdded = true
+                } else {
+                  setMessages((prev) => {
+                    const next = [...prev]
+                    next[next.length - 1] = { role: 'assistant', content: assistantContent }
+                    return next
+                  })
+                }
+              }
+            } catch { /* ignore malformed chunk */ }
+          }
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'An unexpected error occurred. Please try again.', isError: true },
+        ])
+      } finally {
+        setIsLoading(false)
+        inputRef.current?.focus()
       }
     },
-    [handleSend],
+    [token, isLoading],
   )
 
-  const isEmpty = messages.length === 0 && !isLoading
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>): void => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        void submit(question)
+      }
+      if (e.key === 'Escape') {
+        setShowSuggestions(false)
+      }
+    },
+    [question, submit],
+  )
+
+  const handleSuggestionClick = useCallback(
+    (s: string): void => {
+      void submit(s)
+    },
+    [submit],
+  )
+
+  // Only show last VISIBLE_EXCHANGES exchanges to keep the panel compact
+  const visibleMessages = useMemo(() => {
+    const maxVisible = VISIBLE_EXCHANGES * 2
+    return messages.slice(-maxVisible)
+  }, [messages])
+
+  const hiddenCount = messages.length - visibleMessages.length
+  const hasThread = messages.length > 0 || isLoading
 
   return (
-    <div
-      data-testid="chat-panel"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'var(--surface, #f8fafc)',
-        border: '1px solid var(--border, #e2e8f0)',
-        borderRadius: '1.5rem',
-        overflow: 'hidden',
-        height: '420px',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          padding: '1rem 1.25rem 0.875rem',
-          borderBottom: '1px solid var(--border, #e2e8f0)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          flexShrink: 0,
-        }}
-      >
+    <div data-testid="chat-panel">
+      {/* Search bar */}
+      <div style={{ position: 'relative' }}>
         <div
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            background: 'var(--primary, #2563eb)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            gap: '10px',
+            background: 'var(--surface, #ffffff)',
+            border: '1.5px solid var(--border-medium, rgba(15,23,42,0.13))',
+            borderRadius: showSuggestions && filteredSuggestions.length > 0 ? '1rem 1rem 0 0' : '1rem',
+            padding: '0 1rem',
+            boxShadow: 'var(--shadow-card)',
+            transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setShowSuggestions(false)
+            }
           }}
         >
+          {/* Search icon */}
           <svg
             width="15"
             height="15"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#ffffff"
+            stroke="var(--muted, #64748b)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
+            style={{ flexShrink: 0 }}
           >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-        </div>
-        <div>
-          <p
-            style={{
-              fontSize: '0.875rem',
-              fontWeight: 700,
-              color: 'var(--text, #1e293b)',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
-            }}
-          >
-            Ask ClearSpend
-          </p>
-          <p style={{ fontSize: '0.7rem', color: 'var(--muted, #64748b)', marginTop: 1 }}>
-            Your personal financial advisor
-          </p>
-        </div>
-      </div>
 
-      {/* Message area */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '1rem 1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem',
-        }}
-      >
-        {isEmpty && (
-          <div
+          <input
+            ref={inputRef}
+            data-testid="chat-input"
+            type="text"
+            value={question}
+            onChange={(e) => {
+              setQuestion(e.target.value)
+              setShowSuggestions(true)
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything about your finances…"
             style={{
               flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              fontSize: '0.875rem',
+              fontFamily: 'inherit',
+              color: 'var(--text, #0f172a)',
+              padding: '0.875rem 0',
+            }}
+          />
+
+          {/* Send button */}
+          <button
+            type="button"
+            onClick={() => void submit(question)}
+            data-testid="chat-send-btn"
+            disabled={isLoading || !question.trim()}
+            aria-label="Send question"
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: '0.5rem',
+              background:
+                isLoading || !question.trim() ? 'transparent' : 'var(--primary, #2563eb)',
+              color: isLoading || !question.trim() ? 'var(--muted, #94a3b8)' : '#ffffff',
+              border: isLoading || !question.trim() ? '1px solid var(--border, rgba(15,23,42,0.07))' : 'none',
+              cursor: isLoading || !question.trim() ? 'default' : 'pointer',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem',
-              opacity: 0.5,
+              transition: 'background 0.15s ease',
             }}
           >
             <svg
-              width="32"
-              height="32"
+              width="13"
+              height="13"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--muted, #64748b)"
-              strokeWidth="1.5"
+              stroke="currentColor"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
-            <p style={{ fontSize: '0.8rem', color: 'var(--muted, #64748b)', textAlign: 'center' }}>
-              Ask anything about your spending, budgets, or trends
-            </p>
-          </div>
-        )}
+          </button>
+        </div>
 
-        {messages.map((msg, i) => (
+        {/* Autocomplete dropdown */}
+        {showSuggestions && filteredSuggestions.length > 0 && (
           <div
-            key={i}
+            data-testid="chat-suggestions"
+            role="listbox"
             style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              position: 'absolute',
+              top: '100%',
+              left: 0,
+              right: 0,
+              zIndex: 20,
+              background: 'var(--surface, #ffffff)',
+              border: '1.5px solid var(--border-medium, rgba(15,23,42,0.13))',
+              borderTop: 'none',
+              borderRadius: '0 0 1rem 1rem',
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
             }}
           >
-            <div
-              data-testid={msg.role === 'user' ? 'chat-user-msg' : 'chat-assistant-msg'}
+            {filteredSuggestions.map((s, i) => (
+              <button
+                key={s}
+                role="option"
+                aria-selected={false}
+                type="button"
+                data-testid="chat-suggestion"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  handleSuggestionClick(s)
+                }}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '0.65rem 1rem',
+                  fontSize: '0.82rem',
+                  color: 'var(--text-secondary, #334155)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: i > 0 ? '1px solid var(--border, rgba(15,23,42,0.07))' : 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--surface-hover, #eff6ff)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="var(--muted, #64748b)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  style={{ flexShrink: 0 }}
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Conversation thread */}
+      {hasThread && (
+        <div
+          ref={threadRef}
+          data-testid="chat-thread"
+          style={{
+            marginTop: '0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+          }}
+        >
+          {/* Collapsed history pill */}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                // Expand: temporarily show all (not needed for MVP, just reset)
+              }}
               style={{
-                maxWidth: '82%',
-                padding: '0.6rem 0.875rem',
-                borderRadius: msg.role === 'user' ? '1rem 1rem 0.25rem 1rem' : '1rem 1rem 1rem 0.25rem',
-                fontSize: '0.82rem',
-                lineHeight: 1.55,
-                whiteSpace: 'pre-wrap',
-                ...(msg.role === 'user'
-                  ? {
-                      background: 'var(--primary, #2563eb)',
-                      color: '#ffffff',
-                    }
-                  : msg.isError
-                  ? {
-                      background: 'var(--accent-negative-subtle, #fff1f2)',
-                      color: 'var(--accent-negative, #be123c)',
-                      border: '1px solid rgba(190, 18, 60, 0.15)',
-                    }
-                  : {
-                      background: 'var(--bg, #ffffff)',
-                      color: 'var(--text, #1e293b)',
-                      border: '1px solid var(--border, #e2e8f0)',
-                    }),
+                alignSelf: 'center',
+                background: 'rgba(15,23,42,0.05)',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '4px 12px',
+                fontSize: '0.72rem',
+                color: 'var(--muted, #64748b)',
+                cursor: 'default',
+                fontFamily: 'inherit',
+                fontWeight: 500,
               }}
             >
-              {msg.content}
-            </div>
-          </div>
-        ))}
+              {hiddenCount} earlier message{hiddenCount !== 1 ? 's' : ''} not shown
+            </button>
+          )}
 
-        {isLoading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          {visibleMessages.map((msg, i) => (
+            <div key={messages.length - visibleMessages.length + i}>
+              {msg.role === 'user' ? (
+                <p
+                  data-testid="chat-user-msg"
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: 'var(--muted, #64748b)',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  {msg.content}
+                </p>
+              ) : (
+                <div
+                  data-testid="chat-assistant-msg"
+                  style={{
+                    background: msg.isError
+                      ? 'var(--accent-negative-subtle, rgba(220,38,38,0.07))'
+                      : 'var(--surface, #ffffff)',
+                    border: msg.isError
+                      ? '1px solid rgba(220,38,38,0.15)'
+                      : '1px solid var(--border, rgba(15,23,42,0.07))',
+                    borderRadius: '0.875rem',
+                    padding: '0.75rem 1rem',
+                    color: msg.isError ? 'var(--accent-negative, #dc2626)' : 'var(--text, #0f172a)',
+                    boxShadow: 'var(--shadow-card)',
+                  }}
+                >
+                  {msg.isError ? (
+                    <span style={{ fontSize: '0.82rem' }}>{msg.content}</span>
+                  ) : (
+                    renderMarkdown(msg.content)
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {isLoading && (
             <div
               data-testid="chat-loading"
               aria-label="Loading response"
               style={{
-                padding: '0.6rem 0.875rem',
-                borderRadius: '1rem 1rem 1rem 0.25rem',
-                background: 'var(--bg, #ffffff)',
-                border: '1px solid var(--border, #e2e8f0)',
+                background: 'var(--surface, #ffffff)',
+                border: '1px solid var(--border, rgba(15,23,42,0.07))',
+                borderRadius: '0.875rem',
+                padding: '0.75rem 1rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
+                gap: '5px',
+                boxShadow: 'var(--shadow-card)',
               }}
             >
               {[0, 1, 2].map((n) => (
@@ -269,85 +547,9 @@ export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
                 />
               ))}
             </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input area */}
-      <div
-        style={{
-          padding: '0.75rem 1rem',
-          borderTop: '1px solid var(--border, #e2e8f0)',
-          display: 'flex',
-          gap: '0.5rem',
-          alignItems: 'flex-end',
-          flexShrink: 0,
-          background: 'var(--bg, #ffffff)',
-        }}
-      >
-        <textarea
-          ref={textareaRef}
-          data-testid="chat-input"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
-          rows={1}
-          style={{
-            flex: 1,
-            resize: 'none',
-            borderRadius: '0.875rem',
-            border: '1px solid var(--border, #e2e8f0)',
-            padding: '0.5rem 0.75rem',
-            fontSize: '0.82rem',
-            fontFamily: 'inherit',
-            color: 'var(--text, #1e293b)',
-            background: 'var(--surface, #f8fafc)',
-            outline: 'none',
-            lineHeight: 1.5,
-            maxHeight: '120px',
-            overflowY: 'auto',
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => void handleSend()}
-          data-testid="chat-send-btn"
-          disabled={isLoading || !question.trim()}
-          aria-label="Send message"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            background: isLoading || !question.trim() ? 'var(--border, #e2e8f0)' : 'var(--primary, #2563eb)',
-            color: isLoading || !question.trim() ? 'var(--muted, #94a3b8)' : '#ffffff',
-            border: 'none',
-            cursor: isLoading || !question.trim() ? 'not-allowed' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'background 0.15s ease, color 0.15s ease',
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <line x1="22" y1="2" x2="11" y2="13" />
-            <polygon points="22 2 15 22 11 13 2 9 22 2" />
-          </svg>
-        </button>
-      </div>
+          )}
+        </div>
+      )}
 
       <style>{`
         @keyframes chat-dot-bounce {

@@ -3,22 +3,46 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { ChatPanel } from '@/components/chat/chat-panel'
 
 const mockFetch = vi.fn()
-
 vi.stubGlobal('fetch', mockFetch)
 
-function makeOkResponse(body: object): Partial<Response> {
+function makeSseResponse(events: string[]): Partial<Response> {
+  const chunks = events.map((e) => new TextEncoder().encode(`data: ${e}\n\n`))
+  let index = 0
+  const stream = new ReadableStream({
+    pull(controller) {
+      if (index < chunks.length) {
+        controller.enqueue(chunks[index++])
+      } else {
+        controller.close()
+      }
+    },
+  })
   return {
     ok: true,
     status: 200,
-    json: async () => body,
+    body: stream,
   }
 }
 
-function makeErrorResponse(body: object, status: number): Partial<Response> {
+function makeOkSse(answer: string): Partial<Response> {
+  const words = answer.split(' ')
+  const events = [
+    ...words.map((w, i) => JSON.stringify({ delta: (i > 0 ? ' ' : '') + w })),
+    '[DONE]',
+  ]
+  return makeSseResponse(events)
+}
+
+function makeErrorSse(error: string): Partial<Response> {
+  return makeSseResponse([JSON.stringify({ error }), '[DONE]'])
+}
+
+function makeHttpError(status: number): Partial<Response> {
   return {
     ok: false,
     status,
-    json: async () => body,
+    body: null,
+    json: async () => ({ error: 'Server error' }),
   }
 }
 
@@ -70,7 +94,9 @@ describe('ChatPanel', () => {
   })
 
   it('shows loading state while fetching', async () => {
-    mockFetch.mockReturnValue(new Promise(() => undefined))
+    mockFetch.mockReturnValue(
+      new Promise(() => undefined) // never resolves
+    )
 
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
@@ -108,8 +134,8 @@ describe('ChatPanel', () => {
     })
   })
 
-  it('shows answer as assistant bubble on success', async () => {
-    mockFetch.mockResolvedValue(makeOkResponse({ answer: 'You spent ₹5,000' }) as unknown as Response)
+  it('shows answer as assistant bubble on success (SSE)', async () => {
+    mockFetch.mockResolvedValue(makeOkSse('You spent ₹5,000') as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
@@ -121,8 +147,8 @@ describe('ChatPanel', () => {
     })
   })
 
-  it('shows INSUFFICIENT_CREDITS message', async () => {
-    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'INSUFFICIENT_CREDITS' }, 402) as unknown as Response)
+  it('shows INSUFFICIENT_CREDITS message via SSE error', async () => {
+    mockFetch.mockResolvedValue(makeErrorSse('INSUFFICIENT_CREDITS') as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
@@ -136,8 +162,8 @@ describe('ChatPanel', () => {
     })
   })
 
-  it('shows generic error as assistant bubble', async () => {
-    mockFetch.mockResolvedValue(makeErrorResponse({ error: 'Server down' }, 500) as unknown as Response)
+  it('shows generic error via SSE error field', async () => {
+    mockFetch.mockResolvedValue(makeErrorSse('Server down') as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
@@ -149,10 +175,23 @@ describe('ChatPanel', () => {
     })
   })
 
+  it('shows error when response is not ok', async () => {
+    mockFetch.mockResolvedValue(makeHttpError(500) as unknown as Response)
+
+    render(<ChatPanel token="test-token" />)
+    const input = screen.getByTestId('chat-input')
+    fireEvent.change(input, { target: { value: 'test' } })
+    fireEvent.click(screen.getByTestId('chat-send-btn'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-assistant-msg')).toBeInTheDocument()
+    })
+  })
+
   it('supports multi-turn: second message appears after first answer', async () => {
     mockFetch
-      .mockResolvedValueOnce(makeOkResponse({ answer: 'You spent ₹5,000' }) as unknown as Response)
-      .mockResolvedValueOnce(makeOkResponse({ answer: 'Your top category is Food' }) as unknown as Response)
+      .mockResolvedValueOnce(makeOkSse('You spent ₹5,000') as unknown as Response)
+      .mockResolvedValueOnce(makeOkSse('Your top category is Food') as unknown as Response)
 
     render(<ChatPanel token="test-token" />)
     const input = screen.getByTestId('chat-input')
