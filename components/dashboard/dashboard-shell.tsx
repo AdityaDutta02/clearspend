@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { DashboardData, CategorySlug } from '@/types'
 import type { FilterState } from '@/lib/dashboard-data'
@@ -19,6 +19,7 @@ import { SpendTrendChart } from '@/components/dashboard/spend-trend-chart'
 import { CategoryChart } from '@/components/dashboard/category-chart'
 import { TransactionsTable } from '@/components/dashboard/transactions-table'
 import { InsightsStrip } from '@/components/dashboard/insights-strip'
+import { StatementsModal } from '@/components/dashboard/statements-modal'
 
 export interface DashboardShellProps {
   data: DashboardData
@@ -26,6 +27,8 @@ export interface DashboardShellProps {
   onFilterChange: (filter: FilterState) => void
   onUploadClick: () => void
   isLoading: boolean
+  token: string
+  refresh: () => void
 }
 
 const containerVariants = {
@@ -51,7 +54,10 @@ export function DashboardShell({
   onFilterChange,
   onUploadClick,
   isLoading,
+  token,
+  refresh,
 }: DashboardShellProps): JSX.Element {
+  const [showManageStatements, setShowManageStatements] = useState(false)
   const filteredAnalyses = useMemo(() => filterAnalyses(data, filter), [data, filter])
   // KPIs always use all-time totals across all banks/cards; only month filter applies
   const kpiMetrics = useMemo(() => computeKpis(data.analyses, filter), [data.analyses, filter])
@@ -122,39 +128,73 @@ export function DashboardShell({
             </p>
           </div>
 
-          {/* ── Upload button ── */}
-          <button
-            type="button"
-            onClick={onUploadClick}
-            data-testid="add-statement-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              borderRadius: '999px',
-              background: 'var(--primary)',
-              color: '#ffffff',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              fontFamily: 'inherit',
-              letterSpacing: '-0.01em',
-              flexShrink: 0,
-              marginTop: '4px',
-              boxShadow: '0 2px 10px rgba(37,99,235,0.25)',
-              transition: 'opacity 0.18s ease, transform 0.18s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Add Statement
-          </button>
+          {/* ── Action buttons ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', marginTop: '4px' }}>
+            <button
+              type="button"
+              onClick={onUploadClick}
+              data-testid="add-statement-btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '999px',
+                background: 'var(--primary)',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                fontFamily: 'inherit',
+                letterSpacing: '-0.01em',
+                flexShrink: 0,
+                boxShadow: '0 2px 10px rgba(37,99,235,0.25)',
+                transition: 'opacity 0.18s ease, transform 0.18s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Statement
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowManageStatements(true)}
+              data-testid="manage-statements-btn"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                fontFamily: 'inherit',
+                color: 'var(--muted)',
+                letterSpacing: '-0.01em',
+                padding: '2px 4px',
+                transition: 'color 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--muted)' }}
+            >
+              Manage statements
+            </button>
+          </div>
         </div>
+
+        {showManageStatements && (
+          <StatementsModal
+            data={data}
+            token={token}
+            onClose={() => setShowManageStatements(false)}
+            onDeleted={() => {
+              setShowManageStatements(false)
+              refresh()
+            }}
+          />
+        )}
 
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-5">
 
@@ -183,7 +223,7 @@ export function DashboardShell({
 
           {/* ── Transactions (full width) ── */}
           <motion.div variants={rowVariants}>
-            <TransactionsTable transactions={filteredTransactions} isLoading={isLoading} />
+            <TransactionsTable transactions={filteredTransactions} isLoading={isLoading} filter={filter} />
           </motion.div>
 
           {/* ── Insights Grid ── */}

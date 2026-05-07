@@ -253,6 +253,8 @@ export function HomeClient(): JSX.Element {
         onFilterChange={handleFilterChange}
         onUploadClick={handleUploadClick}
         isLoading={dataLoading}
+        token={token}
+        refresh={refresh}
       />
 
       {analyseError !== null && (
