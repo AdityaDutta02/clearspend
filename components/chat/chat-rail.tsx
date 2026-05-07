@@ -244,43 +244,6 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
           gap: '8px',
         }}
       >
-        {/* Suggestions when empty */}
-        {showSuggestions && (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              overflowX: 'auto',
-              flexWrap: 'nowrap',
-              gap: '6px',
-              marginTop: '8px',
-              paddingBottom: '4px',
-            }}
-          >
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => void submit(s)}
-                style={{
-                  textAlign: 'left',
-                  background: 'var(--surface-raised, #f2f2f2)',
-                  border: '1px solid var(--border, rgba(0,0,0,0.08))',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  fontSize: '0.72rem',
-                  color: 'var(--text-secondary, #334155)',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Messages */}
         {messages.map((msg) => (
           <div
@@ -375,6 +338,45 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
           </div>
         )}
       </div>
+
+      {/* Suggestion chips above input */}
+      {showSuggestions && (
+        <div
+          style={{
+            borderTop: '1px solid var(--border, rgba(0,0,0,0.08))',
+            padding: '8px 12px 0',
+            display: 'flex',
+            flexDirection: 'row',
+            overflowX: 'auto',
+            gap: '6px',
+            flexShrink: 0,
+            scrollbarWidth: 'none',
+          }}
+        >
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => void submit(s)}
+              style={{
+                textAlign: 'left',
+                background: 'var(--surface-raised, #f2f2f2)',
+                border: '1px solid var(--border, rgba(0,0,0,0.08))',
+                borderRadius: '999px',
+                padding: '5px 12px',
+                fontSize: '0.7rem',
+                color: 'var(--text-secondary, #334155)',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Input area */}
       <div
