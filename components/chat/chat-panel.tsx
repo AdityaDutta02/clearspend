@@ -1,57 +1,42 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 export interface ChatPanelProps {
   token: string
 }
 
-type ChatState = 'idle' | 'loading' | 'answered' | 'error'
-
-interface ChatApiSuccess {
-  answer: string
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+  isError?: boolean
 }
-
-interface ChatApiError {
-  error: string
-}
-
-type ChatApiResponse = ChatApiSuccess | ChatApiError
 
 export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
-  const [isOpen, setIsOpen] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
   const [question, setQuestion] = useState('')
-  const [chatState, setChatState] = useState<ChatState>('idle')
-  const [responseText, setResponseText] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
-
-  const handleClose = useCallback((): void => {
-    setIsOpen(false)
-  }, [])
-
-  const handleOpen = useCallback((): void => {
-    setIsOpen(true)
-  }, [])
+  const bottomRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
-    if (!isOpen) return
-    const handler = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') handleClose()
+    if (typeof bottomRef.current?.scrollIntoView === 'function') {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth' })
     }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isOpen, handleClose])
+  }, [messages, isLoading])
 
   const handleSend = useCallback(async (): Promise<void> => {
     const trimmed = question.trim()
-    if (!trimmed) return
+    if (!trimmed || isLoading) return
+
+    setMessages((prev) => [...prev, { role: 'user', content: trimmed }])
+    setQuestion('')
+    setIsLoading(true)
 
     abortRef.current?.abort()
     abortRef.current = new AbortController()
     const { signal } = abortRef.current
-
-    setChatState('loading')
-    setResponseText('')
 
     try {
       const res = await fetch('/api/chat', {
@@ -64,209 +49,312 @@ export function ChatPanel({ token }: ChatPanelProps): JSX.Element {
         signal,
       })
 
-      // Read response body safely — proxy errors may return non-JSON (e.g. 502 HTML)
       let body: { answer?: string; error?: string } | null = null
       try {
         body = (await res.json()) as { answer?: string; error?: string }
       } catch {
-        // non-JSON body; leave body as null
+        // non-JSON body
       }
 
       if (!res.ok) {
         const errMsg = body?.error ?? 'An unexpected error occurred.'
-        if (errMsg.includes('INSUFFICIENT_CREDITS') || errMsg === 'INSUFFICIENT_CREDITS') {
-          setChatState('error')
-          setResponseText('You need at least 1 credit to send a message.')
-        } else {
-          setChatState('error')
-          setResponseText(errMsg)
-        }
-        return
+        const displayMsg =
+          errMsg.includes('INSUFFICIENT_CREDITS') || errMsg === 'INSUFFICIENT_CREDITS'
+            ? 'You need at least 1 credit to send a message.'
+            : errMsg
+        setMessages((prev) => [...prev, { role: 'assistant', content: displayMsg, isError: true }])
+      } else {
+        setMessages((prev) => [...prev, { role: 'assistant', content: body?.answer ?? '' }])
       }
-
-      setChatState('answered')
-      setResponseText(body?.answer ?? '')
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
-      setResponseText('An unexpected error occurred. Please try again.')
-      setChatState('error')
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'An unexpected error occurred. Please try again.', isError: true },
+      ])
+    } finally {
+      setIsLoading(false)
     }
-  }, [question, token])
+  }, [question, token, isLoading])
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        void handleSend()
+      }
+    },
+    [handleSend],
+  )
+
+  const isEmpty = messages.length === 0 && !isLoading
 
   return (
-    <>
-      {isOpen && (
+    <div
+      data-testid="chat-panel"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--surface, #f8fafc)',
+        border: '1px solid var(--border, #e2e8f0)',
+        borderRadius: '1.5rem',
+        overflow: 'hidden',
+        height: '420px',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          padding: '1rem 1.25rem 0.875rem',
+          borderBottom: '1px solid var(--border, #e2e8f0)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          flexShrink: 0,
+        }}
+      >
         <div
-          data-testid="chat-panel"
           style={{
-            position: 'fixed',
-            bottom: '88px',
-            right: '24px',
-            zIndex: 40,
-            width: 'min(400px, 90vw)',
-            background: 'var(--bg, #ffffff)',
-            border: '1px solid var(--border, #e2e8f0)',
-            borderRadius: '1.25rem',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            padding: '1.25rem',
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'var(--primary, #2563eb)',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h2
-              style={{
-                fontSize: '0.9rem',
-                fontWeight: 700,
-                color: 'var(--text, #1e293b)',
-                letterSpacing: '-0.02em',
-                margin: 0,
-              }}
-            >
-              Ask anything about your finances
-            </h2>
-            <button
-              type="button"
-              onClick={handleClose}
-              aria-label="Close chat panel"
-              data-testid="chat-close-btn"
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--muted, #64748b)',
-                fontSize: '1.25rem',
-                lineHeight: 1,
-                fontWeight: 700,
-                padding: '2px 6px',
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          <textarea
-            data-testid="chat-input"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g. How much did I spend on food last month?"
-            rows={3}
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        <div>
+          <p
             style={{
-              width: '100%',
-              resize: 'none',
-              borderRadius: '0.75rem',
-              border: '1px solid var(--border, #e2e8f0)',
-              padding: '0.625rem 0.75rem',
-              fontSize: '0.82rem',
-              fontFamily: 'inherit',
-              color: 'var(--text, #1e293b)',
-              background: 'var(--bg, #ffffff)',
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-
-          <button
-            type="button"
-            onClick={handleSend}
-            data-testid="chat-send-btn"
-            disabled={chatState === 'loading'}
-            style={{
-              alignSelf: 'flex-end',
-              padding: '7px 18px',
-              borderRadius: '999px',
-              background: 'var(--primary, #2563eb)',
-              color: '#ffffff',
-              border: 'none',
-              cursor: chatState === 'loading' ? 'not-allowed' : 'pointer',
-              fontSize: '0.8rem',
+              fontSize: '0.875rem',
               fontWeight: 700,
-              fontFamily: 'inherit',
-              letterSpacing: '-0.01em',
-              opacity: chatState === 'loading' ? 0.7 : 1,
+              color: 'var(--text, #1e293b)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
             }}
           >
-            Send
-          </button>
+            Ask ClearSpend
+          </p>
+          <p style={{ fontSize: '0.7rem', color: 'var(--muted, #64748b)', marginTop: 1 }}>
+            Your personal financial advisor
+          </p>
+        </div>
+      </div>
 
-          {chatState === 'loading' && (
+      {/* Message area */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '1rem 1.25rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+        }}
+      >
+        {isEmpty && (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              opacity: 0.5,
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--muted, #64748b)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted, #64748b)', textAlign: 'center' }}>
+              Ask anything about your spending, budgets, or trends
+            </p>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            }}
+          >
+            <div
+              data-testid={msg.role === 'user' ? 'chat-user-msg' : 'chat-assistant-msg'}
+              style={{
+                maxWidth: '82%',
+                padding: '0.6rem 0.875rem',
+                borderRadius: msg.role === 'user' ? '1rem 1rem 0.25rem 1rem' : '1rem 1rem 1rem 0.25rem',
+                fontSize: '0.82rem',
+                lineHeight: 1.55,
+                whiteSpace: 'pre-wrap',
+                ...(msg.role === 'user'
+                  ? {
+                      background: 'var(--primary, #2563eb)',
+                      color: '#ffffff',
+                    }
+                  : msg.isError
+                  ? {
+                      background: 'var(--accent-negative-subtle, #fff1f2)',
+                      color: 'var(--accent-negative, #be123c)',
+                      border: '1px solid rgba(190, 18, 60, 0.15)',
+                    }
+                  : {
+                      background: 'var(--bg, #ffffff)',
+                      color: 'var(--text, #1e293b)',
+                      border: '1px solid var(--border, #e2e8f0)',
+                    }),
+              }}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div
               data-testid="chat-loading"
               aria-label="Loading response"
               style={{
-                borderRadius: '0.75rem',
-                overflow: 'hidden',
-                height: '56px',
-                background: 'var(--border, #e2e8f0)',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }}
-            />
-          )}
-
-          {(chatState === 'answered' || chatState === 'error') && (
-            <div
-              data-testid="chat-response"
-              style={{
-                fontSize: '0.82rem',
-                color: chatState === 'error' ? 'var(--accent-negative, #be123c)' : 'var(--text, #1e293b)',
-                background:
-                  chatState === 'error'
-                    ? 'var(--accent-negative-subtle, #fff1f2)'
-                    : 'var(--primary-subtle, #eff6ff)',
-                borderRadius: '0.75rem',
-                padding: '0.625rem 0.75rem',
-                whiteSpace: 'pre-wrap',
-                lineHeight: 1.55,
+                padding: '0.6rem 0.875rem',
+                borderRadius: '1rem 1rem 1rem 0.25rem',
+                background: 'var(--bg, #ffffff)',
+                border: '1px solid var(--border, #e2e8f0)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
               }}
             >
-              {responseText}
+              {[0, 1, 2].map((n) => (
+                <span
+                  key={n}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: 'var(--muted, #94a3b8)',
+                    display: 'inline-block',
+                    animation: 'chat-dot-bounce 1.2s ease-in-out infinite',
+                    animationDelay: `${n * 0.2}s`,
+                  }}
+                />
+              ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      <button
-        type="button"
-        onClick={handleOpen}
-        data-testid="chat-toggle-btn"
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input area */}
+      <div
         style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          zIndex: 40,
+          padding: '0.75rem 1rem',
+          borderTop: '1px solid var(--border, #e2e8f0)',
           display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          padding: '10px 18px',
-          borderRadius: '999px',
-          background: 'var(--primary, #2563eb)',
-          color: '#ffffff',
-          border: 'none',
-          cursor: 'pointer',
-          fontSize: '0.82rem',
-          fontWeight: 700,
-          fontFamily: 'inherit',
-          letterSpacing: '-0.01em',
-          boxShadow: '0 4px 16px rgba(37,99,235,0.3)',
+          gap: '0.5rem',
+          alignItems: 'flex-end',
+          flexShrink: 0,
+          background: 'var(--bg, #ffffff)',
         }}
-        aria-label="Open chat assistant"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+        <textarea
+          ref={textareaRef}
+          data-testid="chat-input"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
+          rows={1}
+          style={{
+            flex: 1,
+            resize: 'none',
+            borderRadius: '0.875rem',
+            border: '1px solid var(--border, #e2e8f0)',
+            padding: '0.5rem 0.75rem',
+            fontSize: '0.82rem',
+            fontFamily: 'inherit',
+            color: 'var(--text, #1e293b)',
+            background: 'var(--surface, #f8fafc)',
+            outline: 'none',
+            lineHeight: 1.5,
+            maxHeight: '120px',
+            overflowY: 'auto',
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => void handleSend()}
+          data-testid="chat-send-btn"
+          disabled={isLoading || !question.trim()}
+          aria-label="Send message"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: isLoading || !question.trim() ? 'var(--border, #e2e8f0)' : 'var(--primary, #2563eb)',
+            color: isLoading || !question.trim() ? 'var(--muted, #94a3b8)' : '#ffffff',
+            border: 'none',
+            cursor: isLoading || !question.trim() ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'background 0.15s ease, color 0.15s ease',
+          }}
         >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-        Ask ClearSpend
-      </button>
-    </>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="22" y1="2" x2="11" y2="13" />
+            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+          </svg>
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes chat-dot-bounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+      `}</style>
+    </div>
   )
 }

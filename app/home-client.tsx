@@ -248,7 +248,6 @@ export function HomeClient(): JSX.Element {
   // Data loaded — render the full dashboard
   return (
     <div data-testid="main-page">
-      <ChatPanel token={token} />
       <DashboardShell
         data={data}
         filter={filter}
@@ -258,6 +257,11 @@ export function HomeClient(): JSX.Element {
         token={token}
         refresh={refresh}
       />
+
+      {/* Chat — main feature, always visible below dashboard */}
+      <div className="max-w-5xl mx-auto px-4 pb-10" style={{ marginTop: '1.5rem' }}>
+        <ChatPanel token={token} />
+      </div>
 
       {analyseError !== null && (
         <div
