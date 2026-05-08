@@ -136,7 +136,7 @@ export function TransactionsTable({
   useEffect(() => { setPage(0) }, [visibleTransactions])
 
   const categoryTotal = useMemo(
-    () => selectedCategory ? debits.reduce((sum, t) => sum + t.amount, 0) : null,
+    () => selectedCategory ? debits.reduce((sum, t) => sum + Number(t.amount), 0) : null,
     [debits, selectedCategory],
   )
 
