@@ -312,34 +312,39 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
         )}
       </div>
 
-      {/* Suggestion chips above input */}
+      {/* Suggestion list above input */}
       {showSuggestions && (
         <div
           style={{
             borderTop: '1px solid var(--border, rgba(0,0,0,0.08))',
-            padding: '8px 12px 0',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '6px',
+            margin: '0 12px 8px',
+            border: '1px solid var(--border, rgba(0,0,0,0.08))',
+            borderRadius: '10px',
+            overflow: 'hidden',
             flexShrink: 0,
           }}
         >
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTIONS.map((s, i) => (
             <button
               key={s}
               type="button"
               onClick={() => void submit(s)}
               style={{
+                display: 'block',
+                width: '100%',
                 textAlign: 'left',
-                background: 'var(--surface-raised, #f2f2f2)',
-                border: '1px solid var(--border, rgba(0,0,0,0.08))',
-                borderRadius: '999px',
-                padding: '5px 12px',
-                fontSize: '0.7rem',
-                color: 'var(--text-secondary, #334155)',
+                background: 'none',
+                border: 'none',
+                borderTop: i === 0 ? 'none' : '1px solid var(--border, rgba(0,0,0,0.08))',
+                padding: '10px 14px',
+                fontSize: '0.78rem',
+                color: 'var(--text, #1a1a1a)',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
+                lineHeight: 1.4,
               }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-raised, #f2f2f2)' }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
             >
               {s}
             </button>
