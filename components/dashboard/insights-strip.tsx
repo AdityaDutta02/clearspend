@@ -26,20 +26,14 @@ function collectInsights(analyses: Analysis[]): string[] {
   return result
 }
 
-function InsightIcon(): JSX.Element {
+function ShimmerRows(): JSX.Element {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M12 16v-4M12 8h.01"/>
-    </svg>
-  )
-}
-
-function ShimmerGrid(): JSX.Element {
-  return (
-    <div className="insights-grid" aria-hidden="true" data-testid="shimmer-block">
-      {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="animate-pulse rounded-2xl" style={{ height: '88px', background: 'var(--border)' }} />
+    <div aria-hidden="true" data-testid="shimmer-block">
+      {[1, 2, 3].map((i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border)', flexShrink: 0 }} />
+          <div className="animate-pulse" style={{ height: '11px', flex: 1, borderRadius: '4px', background: 'var(--border)' }} />
+        </div>
       ))}
     </div>
   )
@@ -49,56 +43,58 @@ export function InsightsStrip({ analyses, isLoading }: InsightsStripProps): JSX.
   const insights = collectInsights(analyses)
 
   return (
-    <div className="card" data-testid="insights-strip">
-      <div style={{ marginBottom: '18px' }}>
-        <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '4px' }}>
-          Powered by AI
-        </p>
-        <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
+    <div className="card" data-testid="insights-strip" style={{ padding: '16px 20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
           Insights
-        </p>
+        </span>
+        <span style={{
+          fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.06em',
+          background: 'var(--primary-subtle)', color: 'var(--primary)',
+          borderRadius: '4px', padding: '1px 5px', textTransform: 'uppercase',
+        }}>
+          AI
+        </span>
       </div>
 
       {isLoading ? (
-        <ShimmerGrid />
+        <ShimmerRows />
       ) : insights.length === 0 ? (
-        <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>
+        <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '8px' }}>
           No insights yet — upload a statement to get started.
         </p>
       ) : (
-        <div className="insights-grid" role="list">
+        <div role="list">
           {insights.map((insight, i) => (
             <motion.div
               key={insight}
               role="listitem"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
               data-testid="insight-card"
-            >
-              <div style={{
-                background: 'var(--surface-raised)',
-                borderRadius: '12px',
-                padding: '14px 16px',
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.04, duration: 0.3 }}
+              style={{
                 display: 'flex',
-                gap: '12px',
-                alignItems: 'flex-start',
-                border: '1px solid var(--border)',
-                borderLeft: '3px solid var(--primary)',
-                height: '100%',
+                alignItems: 'baseline',
+                gap: '10px',
+                padding: '9px 0',
+                borderBottom: i < insights.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <span style={{
+                width: 5, height: 5, borderRadius: '50%',
+                background: 'var(--primary)', flexShrink: 0,
+                marginTop: '1px',
+                display: 'inline-block',
+              }} />
+              <p style={{
+                fontSize: '0.78rem', lineHeight: 1.55,
+                color: 'var(--text-secondary)', margin: 0,
+                letterSpacing: '-0.005em',
               }}>
-                <div style={{
-                  width: 26, height: 26, borderRadius: '8px',
-                  background: 'var(--primary-subtle)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, color: 'var(--primary)', marginTop: '1px',
-                }}>
-                  <InsightIcon />
-                </div>
-                <p style={{ fontSize: '0.78rem', lineHeight: 1.6, color: 'var(--text-secondary)', margin: 0, letterSpacing: '-0.005em' }}>
-                  {insight}
-                </p>
-              </div>
+                {insight}
+              </p>
             </motion.div>
           ))}
         </div>
