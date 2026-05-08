@@ -135,6 +135,11 @@ export function TransactionsTable({
 
   useEffect(() => { setPage(0) }, [visibleTransactions])
 
+  const categoryTotal = useMemo(
+    () => selectedCategory ? debits.reduce((sum, t) => sum + t.amount, 0) : null,
+    [debits, selectedCategory],
+  )
+
   const pageCount = Math.ceil(visibleTransactions.length / PAGE_SIZE)
   const pagedTransactions = visibleTransactions.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
@@ -150,9 +155,19 @@ export function TransactionsTable({
           Recent
         </p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-          <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
-            Transactions
-          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', margin: 0 }}>
+              Transactions
+            </p>
+            {categoryTotal !== null && (
+              <span className="tabular" style={{
+                fontSize: '0.82rem', fontWeight: 700,
+                color: 'var(--primary)', letterSpacing: '-0.01em',
+              }}>
+                {formatInr(categoryTotal)}
+              </span>
+            )}
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {visibleTransactions.length > 0 && (
               <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500 }}>
