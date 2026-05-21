@@ -88,7 +88,7 @@ export function FilterBar({ availableMonths, availableBanks, availableCards, fil
     : availableCards
 
   return (
-    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Dashboard filters">
+    <div className="flex items-center gap-2 filter-bar-scroll" role="group" aria-label="Dashboard filters" style={{ overflowX: 'auto' }}>
       {availableMonths.length > 0 && (
         <select
           value={filter.month ?? ''}

@@ -204,7 +204,9 @@ export function TransactionsTable({
                 fontFamily: 'inherit',
                 color: 'var(--text)',
                 outline: 'none',
-                width: '160px',
+                flex: 1,
+                minWidth: '100px',
+                maxWidth: '160px',
               }}
             />
             {visibleTransactions.length > 0 && (
@@ -212,6 +214,7 @@ export function TransactionsTable({
                 type="button"
                 onClick={() => exportCsv(visibleTransactions)}
                 data-testid="export-csv-btn"
+                className="export-csv-btn"
                 style={{
                   display: 'flex',
                   alignItems: 'center',

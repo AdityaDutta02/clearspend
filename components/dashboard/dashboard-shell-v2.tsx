@@ -94,7 +94,7 @@ export function DashboardShellV2({
         </div>
 
         {/* FilterBar - center */}
-        <div style={{ flex: 1, overflow: 'hidden' }}>
+        <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
           <FilterBar
             availableMonths={availableMonths}
             availableBanks={availableBanks}
@@ -159,9 +159,9 @@ export function DashboardShellV2({
       >
         {/* Content column */}
         <div
+          className="content-col"
           style={{
             overflowY: 'auto',
-            padding: '24px',
             display: 'flex',
             flexDirection: 'column',
             gap: '20px',

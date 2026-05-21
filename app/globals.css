@@ -425,3 +425,18 @@ body::before {
   border-radius: 8px;
   gap: 8px;
 }
+
+/* ─── Content column ─────────────────────────────────── */
+.content-col {
+  padding: 24px;
+  overflow-x: hidden;
+}
+@media (max-width: 640px) {
+  .content-col {
+    padding: 16px;
+    gap: 16px;
+  }
+  .export-csv-btn {
+    display: none !important;
+  }
+}
