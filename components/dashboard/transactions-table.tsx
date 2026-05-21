@@ -154,7 +154,8 @@ export function TransactionsTable({
         <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '4px' }}>
           Recent
         </p>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+        {/* Title row — always one line */}
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px', marginBottom: '2px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
             <p style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', margin: 0 }}>
               Transactions
@@ -168,16 +169,20 @@ export function TransactionsTable({
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {visibleTransactions.length > 0 && (
-              <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500 }}>
-                {visibleTransactions.length} shown
-              </span>
-            )}
+          {visibleTransactions.length > 0 && (
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 500, flexShrink: 0 }}>
+              {visibleTransactions.length} shown
+            </span>
+          )}
+        </div>
+        {/* Controls — inline on desktop, stacked on mobile */}
+        <div className="tx-controls-bar">
+          <div className="tx-controls-right">
             {availableCategories.length > 0 && (
               <select
                 value={selectedCategory ?? ''}
                 onChange={(e) => onCategoryChange((e.target.value as CategorySlug) || null)}
+                className="tx-cat-select"
                 style={selectedCategory ? activeSelectStyle : selectStyle}
                 data-testid="category-dropdown"
                 aria-label="Filter by category"
@@ -194,6 +199,7 @@ export function TransactionsTable({
               onChange={handleSearchChange}
               placeholder="Search transactions…"
               data-testid="transaction-search"
+              className="tx-search"
               style={{
                 appearance: 'none',
                 background: 'rgba(15,23,42,0.05)',

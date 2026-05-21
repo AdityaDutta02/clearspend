@@ -426,6 +426,59 @@ body::before {
   gap: 8px;
 }
 
+/* ─── App header ─────────────────────────────────────── */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface, #FFFFFF);
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.header-brand {
+  flex-shrink: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 16px;
+}
+
+.header-filter-slot {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding: 0 8px;
+}
+.header-filter-slot::-webkit-scrollbar { display: none; }
+
+.header-actions {
+  flex-shrink: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 0 0;
+}
+
+@media (max-width: 640px) {
+  .header-brand { flex: 1; }
+  .header-filter-slot {
+    order: 3;
+    width: 100%;
+    height: auto;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border, rgba(0,0,0,0.08));
+  }
+}
+
 /* ─── Content column ─────────────────────────────────── */
 .content-col {
   padding: 24px;
@@ -434,9 +487,60 @@ body::before {
 @media (max-width: 640px) {
   .content-col {
     padding: 16px;
-    gap: 16px;
+    gap: 16px !important;
   }
   .export-csv-btn {
     display: none !important;
+  }
+}
+
+/* ─── Transaction controls ───────────────────────────── */
+.tx-controls-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tx-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .tx-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .tx-controls-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  /* Full-width iOS-style search bar */
+  .tx-search {
+    width: 100% !important;
+    max-width: none !important;
+    flex: none !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+  }
+  /* Full-width iOS-style category picker */
+  .tx-cat-select {
+    width: 100% !important;
+    max-width: none !important;
+    height: 44px !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+    padding: 0 40px 0 16px !important;
+    background-position: right 14px center !important;
+    box-sizing: border-box !important;
   }
 }

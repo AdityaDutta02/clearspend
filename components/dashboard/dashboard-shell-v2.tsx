@@ -55,30 +55,22 @@ export function DashboardShellV2({
   )
 
   return (
-    <main data-design="v2" data-testid="dashboard-shell-v2">
-      {/* Toolbar */}
-      <header
-        style={{
-          height: 48,
-          position: 'sticky',
-          top: 0,
-          zIndex: 30,
-          background: 'var(--surface, #FFFFFF)',
-          borderBottom: '1px solid var(--border, rgba(0,0,0,0.08))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '0 16px',
-        }}
-      >
-        {/* Logo pill - left */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+    <main
+      data-design="v2"
+      data-testid="dashboard-shell-v2"
+      style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflowX: 'hidden' }}
+    >
+      {/* Toolbar — 1 row on desktop, 2 rows on mobile (filters wrap below) */}
+      <header className="app-header">
+        {/* Logo — left */}
+        <div className="header-brand" style={{ gap: '6px' }}>
           <span
             style={{
               width: 6,
               height: 6,
               borderRadius: '50%',
               background: 'var(--primary, #5E6AD2)',
+              flexShrink: 0,
             }}
           />
           <span
@@ -93,8 +85,8 @@ export function DashboardShellV2({
           </span>
         </div>
 
-        {/* FilterBar - center */}
-        <div style={{ flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden' }}>
+        {/* FilterBar — center on desktop, full-width row 2 on mobile */}
+        <div className="header-filter-slot">
           <FilterBar
             availableMonths={availableMonths}
             availableBanks={availableBanks}
@@ -104,8 +96,8 @@ export function DashboardShellV2({
           />
         </div>
 
-        {/* Actions - right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {/* Actions — right */}
+        <div className="header-actions">
           <button
             type="button"
             onClick={onUploadClick}
@@ -114,7 +106,7 @@ export function DashboardShellV2({
               display: 'flex',
               alignItems: 'center',
               gap: '5px',
-              padding: '5px 12px',
+              padding: '5px 14px',
               borderRadius: '999px',
               background: 'var(--primary, #5E6AD2)',
               color: '#ffffff',
@@ -123,6 +115,7 @@ export function DashboardShellV2({
               fontSize: '0.78rem',
               fontWeight: 600,
               fontFamily: 'inherit',
+              minHeight: 32,
             }}
           >
             + Add
@@ -140,7 +133,9 @@ export function DashboardShellV2({
               fontFamily: 'inherit',
               fontSize: '1.1rem',
               lineHeight: 1,
-              padding: '4px',
+              padding: '8px',
+              minHeight: 32,
+              minWidth: 32,
             }}
           >
             ···
@@ -148,13 +143,14 @@ export function DashboardShellV2({
         </div>
       </header>
 
-      {/* Two-column body */}
+      {/* Two-column body — flex: 1 so it fills whatever height remains after header */}
       <div
         className="dashboard-v2-grid"
         style={{
           display: 'grid',
-          height: 'calc(100dvh - 48px)',
+          flex: 1,
           overflow: 'hidden',
+          minHeight: 0,
         }}
       >
         {/* Content column */}
