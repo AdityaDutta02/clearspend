@@ -10,8 +10,8 @@ const twoHdfcCards: CardDescriptor[] = [
   { statement_id: 'stmt-b', bank: 'hdfc', card_name: 'Millennia', last_four: '5678' },
 ]
 
-describe('FilterBar — select dropdowns', () => {
-  it('month dropdown renders options from availableMonths', () => {
+describe('FilterBar — month select', () => {
+  it('renders month options from availableMonths', () => {
     const onChange = vi.fn()
     render(
       <FilterBar
@@ -31,15 +31,14 @@ describe('FilterBar — select dropdowns', () => {
     expect(options[2]).toHaveTextContent("Feb '25")
   })
 
-  it('month dropdown is not rendered when availableMonths is empty', () => {
-    const onChange = vi.fn()
+  it('not rendered when availableMonths is empty', () => {
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
         filter={defaultFilter}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
     expect(screen.queryByTestId('month-dropdown')).not.toBeInTheDocument()
@@ -56,17 +55,11 @@ describe('FilterBar — select dropdowns', () => {
         onChange={onChange}
       />,
     )
-    const monthSelect = screen.getByTestId('month-dropdown') as HTMLSelectElement
-    fireEvent.change(monthSelect, { target: { value: '2025-01' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: '2025-01',
-      bank: null,
-      statement_id: null,
-      category: null,
-    })
+    fireEvent.change(screen.getByTestId('month-dropdown'), { target: { value: '2025-01' } })
+    expect(onChange).toHaveBeenCalledWith({ month: '2025-01', bank: null, statement_id: null, category: null })
   })
 
-  it('clearing month (selecting empty) calls onChange with month: null', () => {
+  it('selecting empty month calls onChange with month: null', () => {
     const onChange = vi.fn()
     const filter: FilterState = { month: '2025-01', bank: null, statement_id: null, category: null }
     render(
@@ -78,80 +71,41 @@ describe('FilterBar — select dropdowns', () => {
         onChange={onChange}
       />,
     )
-    const monthSelect = screen.getByTestId('month-dropdown') as HTMLSelectElement
-    fireEvent.change(monthSelect, { target: { value: '' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null,
-      bank: null,
-      statement_id: null,
-      category: null,
-    })
+    fireEvent.change(screen.getByTestId('month-dropdown'), { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith({ month: null, bank: null, statement_id: null, category: null })
   })
+})
 
-  it('bank dropdown renders all banks', () => {
-    const onChange = vi.fn()
+describe('FilterBar — card pills', () => {
+  it('renders All pill and one pill per card', () => {
     render(
       <FilterBar
         availableMonths={[]}
-        availableBanks={['hdfc', 'icici']}
+        availableBanks={['hdfc']}
         availableCards={twoHdfcCards}
         filter={defaultFilter}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
-    const bankSelect = screen.getByTestId('bank-dropdown') as HTMLSelectElement
-    expect(bankSelect).toBeInTheDocument()
-    const options = Array.from(bankSelect.options)
-    expect(options).toHaveLength(3) // "All banks" + 2 banks
-    expect(options[0]).toHaveTextContent('All banks')
-    expect(options[1]).toHaveTextContent('HDFC')
-    expect(options[2]).toHaveTextContent('ICICI')
+    expect(screen.getByTestId('card-pill-all')).toBeInTheDocument()
+    expect(screen.getByTestId('card-pill-stmt-a')).toHaveTextContent('Regalia')
+    expect(screen.getByTestId('card-pill-stmt-b')).toHaveTextContent('Millennia')
   })
 
-  it('selecting a bank calls onChange with bank and resets statement_id to null', () => {
-    const onChange = vi.fn()
+  it('not rendered when availableCards is empty', () => {
     render(
       <FilterBar
         availableMonths={[]}
-        availableBanks={['hdfc', 'icici']}
-        availableCards={twoHdfcCards}
+        availableBanks={[]}
+        availableCards={[]}
         filter={defaultFilter}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
-    const bankSelect = screen.getByTestId('bank-dropdown') as HTMLSelectElement
-    fireEvent.change(bankSelect, { target: { value: 'icici' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null,
-      bank: 'icici',
-      statement_id: null,
-      category: null,
-    })
+    expect(screen.queryByTestId('card-pill-all')).not.toBeInTheDocument()
   })
 
-  it('clearing bank (selecting empty) calls onChange with bank: null and statement_id: null', () => {
-    const onChange = vi.fn()
-    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null, category: null }
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={['hdfc', 'icici']}
-        availableCards={twoHdfcCards}
-        filter={filter}
-        onChange={onChange}
-      />,
-    )
-    const bankSelect = screen.getByTestId('bank-dropdown') as HTMLSelectElement
-    fireEvent.change(bankSelect, { target: { value: '' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null,
-      bank: null,
-      statement_id: null,
-      category: null,
-    })
-  })
-
-  it('card dropdown renders options from available cards', () => {
+  it('clicking a card pill calls onChange with bank and statement_id', () => {
     const onChange = vi.fn()
     render(
       <FilterBar
@@ -162,39 +116,13 @@ describe('FilterBar — select dropdowns', () => {
         onChange={onChange}
       />,
     )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    expect(cardSelect).toBeInTheDocument()
-    const options = Array.from(cardSelect.options)
-    expect(options).toHaveLength(3) // "All cards" + 2 cards
-    expect(options[0]).toHaveTextContent('All cards')
-    expect(options[1]).toHaveTextContent('HDFC Regalia ••••1234')
-    expect(options[2]).toHaveTextContent('HDFC Millennia ••••5678')
+    fireEvent.click(screen.getByTestId('card-pill-stmt-a'))
+    expect(onChange).toHaveBeenCalledWith({ month: null, bank: 'hdfc', statement_id: 'stmt-a', category: null })
   })
 
-  it('selecting a card calls onChange with bank and statement_id', () => {
+  it('clicking All pill clears bank and statement_id', () => {
     const onChange = vi.fn()
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={['hdfc']}
-        availableCards={twoHdfcCards}
-        filter={defaultFilter}
-        onChange={onChange}
-      />,
-    )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    fireEvent.change(cardSelect, { target: { value: 'stmt-a' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null,
-      bank: 'hdfc',
-      statement_id: 'stmt-a',
-      category: null,
-    })
-  })
-
-  it('clearing card (selecting empty) calls onChange with statement_id: null', () => {
-    const onChange = vi.fn()
-    const filter: FilterState = { month: null, bank: null, statement_id: 'stmt-a', category: null }
+    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: 'stmt-a', category: null }
     render(
       <FilterBar
         availableMonths={[]}
@@ -204,64 +132,55 @@ describe('FilterBar — select dropdowns', () => {
         onChange={onChange}
       />,
     )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    fireEvent.change(cardSelect, { target: { value: '' } })
-    expect(onChange).toHaveBeenCalledWith({
-      month: null,
-      bank: null,
-      statement_id: null,
-      category: null,
-    })
+    fireEvent.click(screen.getByTestId('card-pill-all'))
+    expect(onChange).toHaveBeenCalledWith({ month: null, bank: null, statement_id: null, category: null })
   })
 
-  it('card dropdown shows only cards matching selected bank', () => {
-    const onChange = vi.fn()
-    const mixedCards: CardDescriptor[] = [
-      { statement_id: 'stmt-hdfc', bank: 'hdfc', card_name: null, last_four: '1111' },
-      { statement_id: 'stmt-icici', bank: 'icici', card_name: null, last_four: '2222' },
+  it('active pill has card-pill--active class', () => {
+    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: 'stmt-a', category: null }
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={['hdfc']}
+        availableCards={twoHdfcCards}
+        filter={filter}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByTestId('card-pill-stmt-a').className).toContain('card-pill--active')
+    expect(screen.getByTestId('card-pill-all').className).not.toContain('card-pill--active')
+  })
+
+  it('All pill has card-pill--active class when no card selected', () => {
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={['hdfc']}
+        availableCards={twoHdfcCards}
+        filter={defaultFilter}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByTestId('card-pill-all').className).toContain('card-pill--active')
+  })
+
+  it('card label uses card_name when available', () => {
+    const cards: CardDescriptor[] = [
+      { statement_id: 'stmt-a', bank: 'hdfc', card_name: 'Regalia', last_four: '1234' },
     ]
-    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={[]}
-        availableBanks={['hdfc', 'icici']}
-        availableCards={mixedCards}
-        filter={filter}
-        onChange={onChange}
+        availableBanks={['hdfc']}
+        availableCards={cards}
+        filter={defaultFilter}
+        onChange={vi.fn()}
       />,
     )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    const options = Array.from(cardSelect.options)
-    expect(options).toHaveLength(2) // "All cards" + 1 matching card (hdfc only)
-    expect(options[0]).toHaveTextContent('All cards')
-    expect(options[1]).toHaveTextContent('HDFC ••••1111')
+    expect(screen.getByTestId('card-pill-stmt-a')).toHaveTextContent('Regalia')
   })
 
-  it('card dropdown shows all cards when no bank is selected', () => {
-    const onChange = vi.fn()
-    const mixedCards: CardDescriptor[] = [
-      { statement_id: 'stmt-hdfc', bank: 'hdfc', card_name: null, last_four: '1111' },
-      { statement_id: 'stmt-icici', bank: 'icici', card_name: null, last_four: '2222' },
-    ]
-    const filter: FilterState = { month: null, bank: null, statement_id: null, category: null }
-    render(
-      <FilterBar
-        availableMonths={[]}
-        availableBanks={['hdfc', 'icici']}
-        availableCards={mixedCards}
-        filter={filter}
-        onChange={onChange}
-      />,
-    )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    const options = Array.from(cardSelect.options)
-    expect(options).toHaveLength(3) // "All cards" + 2 cards
-    expect(options[1]).toHaveTextContent('HDFC ••••1111')
-    expect(options[2]).toHaveTextContent('ICICI ••••2222')
-  })
-
-  it('card label shows only bank and last four when card_name is null', () => {
-    const onChange = vi.fn()
+  it('card label shows bank + last four when card_name is null', () => {
     const cards: CardDescriptor[] = [
       { statement_id: 'stmt-x', bank: 'icici', card_name: null, last_four: '9999' },
     ]
@@ -271,16 +190,13 @@ describe('FilterBar — select dropdowns', () => {
         availableBanks={['icici']}
         availableCards={cards}
         filter={defaultFilter}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    const options = Array.from(cardSelect.options)
-    expect(options[1]).toHaveTextContent('ICICI ••••9999')
+    expect(screen.getByTestId('card-pill-stmt-x')).toHaveTextContent('ICICI ••••9999')
   })
 
-  it('card label shows bank + Card when both card_name and last_four are null', () => {
-    const onChange = vi.fn()
+  it('card label shows bank only when card_name and last_four are null', () => {
     const cards: CardDescriptor[] = [
       { statement_id: 'stmt-y', bank: 'sbi', card_name: null, last_four: null },
     ]
@@ -290,37 +206,57 @@ describe('FilterBar — select dropdowns', () => {
         availableBanks={['sbi']}
         availableCards={cards}
         filter={defaultFilter}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
-    const cardSelect = screen.getByTestId('card-dropdown') as HTMLSelectElement
-    const options = Array.from(cardSelect.options)
-    expect(options[1]).toHaveTextContent('SBI Card')
+    expect(screen.getByTestId('card-pill-stmt-y')).toHaveTextContent('SBI')
   })
 
-  it('card dropdown is not rendered when availableCards is empty', () => {
-    const onChange = vi.fn()
+  it('shows all cards regardless of selected bank', () => {
+    const mixedCards: CardDescriptor[] = [
+      { statement_id: 'stmt-hdfc', bank: 'hdfc', card_name: null, last_four: '1111' },
+      { statement_id: 'stmt-icici', bank: 'icici', card_name: null, last_four: '2222' },
+    ]
+    const filter: FilterState = { month: null, bank: 'hdfc', statement_id: null, category: null }
     render(
       <FilterBar
         availableMonths={[]}
-        availableBanks={['hdfc']}
-        availableCards={[]}
-        filter={defaultFilter}
-        onChange={onChange}
+        availableBanks={['hdfc', 'icici']}
+        availableCards={mixedCards}
+        filter={filter}
+        onChange={vi.fn()}
       />,
     )
-    expect(screen.queryByTestId('card-dropdown')).not.toBeInTheDocument()
+    // Both cards visible regardless of bank filter
+    expect(screen.getByTestId('card-pill-stmt-hdfc')).toBeInTheDocument()
+    expect(screen.getByTestId('card-pill-stmt-icici')).toBeInTheDocument()
   })
+})
 
-  it('category dropdown is not present in FilterBar (moved to TransactionsTable)', () => {
-    const onChange = vi.fn()
+describe('FilterBar — no bank dropdown', () => {
+  it('bank-dropdown is not present', () => {
+    render(
+      <FilterBar
+        availableMonths={[]}
+        availableBanks={['hdfc', 'icici']}
+        availableCards={twoHdfcCards}
+        filter={defaultFilter}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.queryByTestId('bank-dropdown')).not.toBeInTheDocument()
+  })
+})
+
+describe('FilterBar — category', () => {
+  it('category-dropdown is not present (moved to TransactionsTable)', () => {
     render(
       <FilterBar
         availableMonths={[]}
         availableBanks={[]}
         availableCards={[]}
         filter={{ month: null, bank: null, statement_id: null, category: null }}
-        onChange={onChange}
+        onChange={vi.fn()}
       />,
     )
     expect(screen.queryByTestId('category-dropdown')).not.toBeInTheDocument()

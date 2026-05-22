@@ -60,33 +60,37 @@ export function DashboardShellV2({
       data-testid="dashboard-shell-v2"
       style={{ display: 'flex', flexDirection: 'column', height: '100dvh', overflowX: 'hidden' }}
     >
-      {/* Toolbar — 1 row on desktop, 2 rows on mobile (filters wrap below) */}
+      {/* iOS-style two-row header */}
       <header className="app-header">
-        {/* Logo — left */}
-        <div className="header-brand" style={{ gap: '6px' }}>
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: 'var(--primary, #5E6AD2)',
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              color: 'var(--text, #1A1A1A)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            ClearSpend
-          </span>
+        {/* Row 1: nav bar — brand left, actions right */}
+        <div className="nav-bar">
+          <div className="header-brand">
+            <span className="brand-dot" />
+            <span className="brand-name">ClearSpend</span>
+          </div>
+          <div className="header-actions">
+            <button
+              type="button"
+              onClick={onUploadClick}
+              data-testid="add-statement-btn"
+              className="btn-add"
+            >
+              + Add
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowManageStatements(true)}
+              data-testid="manage-statements-btn"
+              aria-label="Manage statements"
+              className="btn-more"
+            >
+              ···
+            </button>
+          </div>
         </div>
 
-        {/* FilterBar — center on desktop, full-width row 2 on mobile */}
-        <div className="header-filter-slot">
+        {/* Row 2: scrollable pill filter strip */}
+        <div className="filter-strip">
           <FilterBar
             availableMonths={availableMonths}
             availableBanks={availableBanks}
@@ -94,52 +98,6 @@ export function DashboardShellV2({
             filter={filter}
             onChange={onFilterChange}
           />
-        </div>
-
-        {/* Actions — right */}
-        <div className="header-actions">
-          <button
-            type="button"
-            onClick={onUploadClick}
-            data-testid="add-statement-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '5px 14px',
-              borderRadius: '999px',
-              background: 'var(--primary, #5E6AD2)',
-              color: '#ffffff',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              fontFamily: 'inherit',
-              minHeight: 32,
-            }}
-          >
-            + Add
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowManageStatements(true)}
-            data-testid="manage-statements-btn"
-            aria-label="Manage statements"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--muted, #8A8A8A)',
-              fontFamily: 'inherit',
-              fontSize: '1.1rem',
-              lineHeight: 1,
-              padding: '8px',
-              minHeight: 32,
-              minWidth: 32,
-            }}
-          >
-            ···
-          </button>
         </div>
       </header>
 
