@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,8 +10,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  type TooltipProps,
 } from 'recharts'
 import type { CategorySlug } from '@/types'
 import type { ChartPoint } from '@/lib/dashboard-data'
@@ -64,48 +63,6 @@ function formatYAxis(value: number): string {
 
 type FlatChartRow = { month: string; total: number } & Partial<Record<CategorySlug, number>>
 
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>): JSX.Element | null {
-  if (!active || !payload?.length) return null
-
-  const entries = payload
-    .filter((p) => (p.value ?? 0) > 0)
-    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
-
-  const total = entries.reduce((sum, p) => sum + (p.value ?? 0), 0)
-
-  return (
-    <div style={{
-      background: 'var(--surface)',
-      border: '1px solid var(--border-medium)',
-      borderRadius: '12px',
-      padding: '14px 16px',
-      boxShadow: 'var(--shadow-elevated)',
-      minWidth: '200px',
-      maxWidth: '240px',
-      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-      zIndex: 50,
-    }}>
-      <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-        {label}
-      </p>
-      <p className="tabular" style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: '10px' }}>
-        {formatInrShort(total)}
-      </p>
-      {entries.map((p) => (
-        <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: CATEGORY_COLORS[p.dataKey as CategorySlug] ?? '#94a3b8', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', flex: 1 }}>
-            {CATEGORY_DISPLAY_NAMES[p.dataKey as CategorySlug] ?? p.dataKey}
-          </span>
-          <span className="tabular" style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text)' }}>
-            {formatInrShort(p.value ?? 0)}
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function ShimmerBlock(): JSX.Element {
   return (
     <div
@@ -118,6 +75,8 @@ function ShimmerBlock(): JSX.Element {
 }
 
 export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.Element {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+
   const activeCategories = ALL_CATEGORIES.filter((slug) =>
     data.some((point) => (point.categories[slug] ?? 0) > 0),
   )
@@ -130,10 +89,19 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
     return row
   })
 
+  const selectedRow = activeIndex !== null ? chartData[activeIndex] : null
+  const defaultRow = chartData.length > 0 ? chartData[chartData.length - 1] : null
+  const displayRow = selectedRow ?? defaultRow
+
+  const handleClick = (data: unknown, index: number): void => {
+    setActiveIndex((prev) => (prev === index ? null : index))
+  }
+
   return (
     <div className="card" style={{ height: '100%', minHeight: '300px', display: 'flex', flexDirection: 'column', overflow: 'visible' }} data-testid="spend-trend-chart">
 
-      <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+      {/* Header: title left, selected month summary right */}
+      <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
         <div>
           <p style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: '4px' }}>
             Over time
@@ -142,16 +110,14 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
             Monthly Spend
           </p>
         </div>
-        {activeCategories.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '180px', justifyContent: 'flex-end' }}>
-            {activeCategories.slice(0, 5).map((slug) => (
-              <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: CATEGORY_COLORS[slug] }} />
-                <span style={{ fontSize: '0.6rem', color: 'var(--muted)', fontWeight: 500 }}>
-                  {CATEGORY_DISPLAY_NAMES[slug].split(' ')[0]}
-                </span>
-              </div>
-            ))}
+        {displayRow && (
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px' }}>
+              {displayRow.month}{selectedRow ? '' : ' (latest)'}
+            </p>
+            <p className="tabular" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              {formatInrShort(displayRow.total)}
+            </p>
           </div>
         )}
       </div>
@@ -163,9 +129,15 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
           <p style={{ color: 'var(--muted)', fontSize: '0.875rem' }}>No data available</p>
         </div>
       ) : data.length === 1 ? (
-        <div style={{ flex: 1, minHeight: '200px', overflow: 'visible' }}>
+        <div style={{ flex: 1, minHeight: '180px', overflow: 'visible' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="40%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              barCategoryGap="40%"
+              onClick={handleClick}
+              style={{ cursor: 'pointer' }}
+            >
               <CartesianGrid strokeDasharray="3 6" stroke="var(--border)" vertical={false} />
               <XAxis
                 dataKey="month"
@@ -179,10 +151,6 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
                 tickLine={false}
                 axisLine={false}
                 width={52}
-              />
-              <Tooltip
-                content={<CustomTooltip />}
-                wrapperStyle={{ zIndex: 50, overflow: 'visible' }}
               />
               {activeCategories.map((slug) => (
                 <Bar
@@ -200,14 +168,19 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
           </ResponsiveContainer>
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: '200px', overflow: 'visible' }}>
+        <div style={{ flex: 1, minHeight: '180px', overflow: 'visible' }}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+              onClick={handleClick}
+              style={{ cursor: 'pointer' }}
+            >
               <defs>
                 {activeCategories.map((slug) => (
                   <linearGradient key={slug} id={`area-${slug}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CATEGORY_COLORS[slug]} stopOpacity={0.6} />
-                    <stop offset="100%" stopColor={CATEGORY_COLORS[slug]} stopOpacity={0.05} />
+                    <stop offset="0%" stopColor={CATEGORY_COLORS[slug]} stopOpacity={activeIndex === null ? 0.55 : 0.3} />
+                    <stop offset="100%" stopColor={CATEGORY_COLORS[slug]} stopOpacity={0.03} />
                   </linearGradient>
                 ))}
               </defs>
@@ -225,10 +198,6 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
                 axisLine={false}
                 width={52}
               />
-              <Tooltip
-                content={<CustomTooltip />}
-                wrapperStyle={{ zIndex: 50, overflow: 'visible' }}
-              />
               {activeCategories.map((slug) => (
                 <Area
                   key={slug}
@@ -239,12 +208,34 @@ export function SpendTrendChart({ data, isLoading }: SpendTrendChartProps): JSX.
                   strokeWidth={1.5}
                   fill={`url(#area-${slug})`}
                   isAnimationActive
-                  animationDuration={600}
+                  animationDuration={500}
                   animationEasing="ease-out"
+                  activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }}
                 />
               ))}
             </AreaChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Category breakdown for selected/latest month */}
+      {displayRow && activeCategories.length > 0 && (
+        <div style={{ marginTop: '14px', display: 'flex', flexWrap: 'wrap', gap: '8px 16px' }}>
+          {activeCategories
+            .filter((slug) => (displayRow[slug] ?? 0) > 0)
+            .sort((a, b) => (displayRow[b] ?? 0) - (displayRow[a] ?? 0))
+            .slice(0, 5)
+            .map((slug) => (
+              <div key={slug} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: CATEGORY_COLORS[slug], flexShrink: 0 }} />
+                <span style={{ fontSize: '0.68rem', color: 'var(--muted)', fontWeight: 500 }}>
+                  {CATEGORY_DISPLAY_NAMES[slug].split(' ')[0]}
+                </span>
+                <span className="tabular" style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text)' }}>
+                  {formatInrShort(displayRow[slug] ?? 0)}
+                </span>
+              </div>
+            ))}
         </div>
       )}
     </div>

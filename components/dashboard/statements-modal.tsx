@@ -110,27 +110,11 @@ export function StatementsModal({ data, token, onClose, onDeleted }: StatementsM
       aria-modal="true"
       aria-label="Manage statements"
       onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 60,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      className="modal-overlay"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--bg, #fff)',
-          borderRadius: '1.5rem',
-          padding: '2rem',
-          width: 'min(640px, 92vw)',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          position: 'relative',
-        }}
+        className="modal-sheet"
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>

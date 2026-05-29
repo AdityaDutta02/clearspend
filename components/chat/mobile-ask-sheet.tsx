@@ -144,7 +144,7 @@ export function MobileAskSheet({ token }: MobileAskSheetProps): JSX.Element {
                 flexDirection: 'column',
               }}
             >
-              <ChatRail token={token} style={{ height: '100%' }} />
+              <ChatRail token={token} style={{ height: '100%' }} hideHeader />
             </div>
           </div>
         </>

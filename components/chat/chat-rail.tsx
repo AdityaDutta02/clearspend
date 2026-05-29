@@ -7,6 +7,7 @@ export interface ChatRailProps {
   token: string
   className?: string
   style?: React.CSSProperties
+  hideHeader?: boolean
 }
 
 interface Message {
@@ -24,7 +25,7 @@ const SUGGESTIONS = [
   'What are my recurring subscriptions?',
 ]
 
-export function ChatRail({ token, className, style }: ChatRailProps): JSX.Element {
+export function ChatRail({ token, className, style, hideHeader }: ChatRailProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([])
   const [question, setQuestion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -196,41 +197,43 @@ export function ChatRail({ token, className, style }: ChatRailProps): JSX.Elemen
       }}
     >
       {/* Header */}
-      <header
-        style={{
-          height: 44,
-          minHeight: 44,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '0 16px',
-          borderBottom: '1px solid var(--border, rgba(0,0,0,0.08))',
-          flexShrink: 0,
-        }}
-      >
-        <span
+      {!hideHeader && (
+        <header
           style={{
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            color: 'var(--text, #0f172a)',
+            height: 44,
+            minHeight: 44,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '0 16px',
+            borderBottom: '1px solid var(--border, rgba(0,0,0,0.08))',
+            flexShrink: 0,
           }}
         >
-          Ask ClearSpend
-        </span>
-        <span
-          style={{
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            background: 'var(--primary, #5e6ad2)',
-            color: '#fff',
-            borderRadius: '4px',
-            padding: '1px 5px',
-            letterSpacing: '0.04em',
-          }}
-        >
-          AI
-        </span>
-      </header>
+          <span
+            style={{
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--text, #0f172a)',
+            }}
+          >
+            Ask ClearSpend
+          </span>
+          <span
+            style={{
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              background: 'var(--primary, #5e6ad2)',
+              color: '#fff',
+              borderRadius: '4px',
+              padding: '1px 5px',
+              letterSpacing: '0.04em',
+            }}
+          >
+            AI
+          </span>
+        </header>
+      )}
 
       {/* Conversation area */}
       <div
