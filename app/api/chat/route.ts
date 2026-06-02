@@ -2,13 +2,25 @@ import { NextRequest } from 'next/server'
 import { buildFinancialContext } from '@/lib/ai/build-context'
 import { callGateway } from '@/lib/terminal-ai'
 
+// Decode JWT payload without verification — used only as a stable cache key.
+// The embed token rotates every 15 min so we must key on userId, not the raw token.
+function stableCacheKey(token: string): string {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()) as Record<string, unknown>
+    const id = (payload.userId ?? payload.sub ?? payload.id) as string | undefined
+    if (id) return id
+  } catch { /* fall through */ }
+  return token.slice(-32)
+}
+
 // In-memory context cache: avoid rebuilding DB context on every follow-up
 const ctxCache = new Map<string, { ctx: string; exp: number }>()
 async function getContext(token: string): Promise<string> {
-  const hit = ctxCache.get(token)
+  const key = stableCacheKey(token)
+  const hit = ctxCache.get(key)
   if (hit && hit.exp > Date.now()) return hit.ctx
   const ctx = await buildFinancialContext(token)
-  ctxCache.set(token, { ctx, exp: Date.now() + 120_000 })
+  ctxCache.set(key, { ctx, exp: Date.now() + 300_000 }) // 5 min TTL
   return ctx
 }
 
@@ -68,8 +80,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       if (msg.includes('402') || msg.includes('credits') || msg.includes('INSUFFICIENT')) {
         await writer.write(sseError('INSUFFICIENT_CREDITS'))
+      } else if (msg.includes('429') || msg.includes('Rate limit')) {
+        await writer.write(sseError('The service is busy right now. Please wait a moment and try again.'))
       } else {
-        await writer.write(sseError(msg))
+        await writer.write(sseError('Something went wrong. Please try again.'))
       }
     } finally {
       await writer.write(sseDone())

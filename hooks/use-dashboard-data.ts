@@ -22,6 +22,11 @@ export function useDashboardData(token: string | null): UseDashboardDataResult {
   const { data, error, isLoading, mutate } = useSWR<DashboardData>(
     token ? ['dashboard', token] : null,
     ([, t]: [string, string]) => fetchDashboard('dashboard', t),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30_000,
+    },
   )
   return { data: data ?? null, error, isLoading, refresh: mutate }
 }

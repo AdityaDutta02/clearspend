@@ -6,11 +6,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const [statements, analyses, transactions] = await Promise.all([
-    dbList<Statement>('statements', {}, token).catch(() => [] as Statement[]),
-    dbList<Analysis>('analyses', {}, token).catch(() => [] as Analysis[]),
-    dbList<Transaction>('transactions', {}, token).catch(() => [] as Transaction[]),
-  ])
+  let statements: Statement[], analyses: Analysis[], transactions: Transaction[]
+  try {
+    ;[statements, analyses, transactions] = await Promise.all([
+      dbList<Statement>('statements', {}, token),
+      dbList<Analysis>('analyses', {}, token),
+      dbList<Transaction>('transactions', {}, token),
+    ])
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : ''
+    if (msg.includes('429') || msg.includes('Rate limit')) {
+      return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
+    }
+    return NextResponse.json({ error: 'db_error' }, { status: 503 })
+  }
 
   // Auto-delete orphan statements (no matching analysis — e.g. failed pipeline run)
   const analysedIds = new Set(analyses.map((a) => a.statement_id))
