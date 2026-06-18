@@ -110,5 +110,6 @@ describe('POST /api/analyse', () => {
     const res = await POST(req)
     expect(res.status).toBe(422)
     expect((await res.json()).error).toBe('NOT_A_STATEMENT')
+    expect(classify.classifyStatement).toHaveBeenCalledTimes(1)
   })
 })
