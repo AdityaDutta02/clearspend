@@ -1,0 +1,63 @@
+import { describe, it, expect } from 'vitest'
+import {
+  sanitiseCategory, sanitiseMerchant, sanitiseFinalTransactions, VALID_CATEGORIES,
+} from '@/lib/sanitise-transactions'
+import type { Transaction } from '@/types'
+
+// ESC (U+001B) injected at runtime via fromCharCode so this source file stays
+// pure ASCII — never paste literal control bytes into a test.
+const ESC = String.fromCharCode(27)
+
+function tx(over: Partial<Transaction> = {}): Transaction {
+  return {
+    id: 't1', statement_id: 's1', date: '2024-01-01', amount: 100,
+    type: 'debit', merchant: 'Swiggy', category: 'food',
+    upi_ref: null, upi_merchant: null, raw_description: 'SWIGGY', ...over,
+  }
+}
+
+describe('sanitiseCategory', () => {
+  it('passes through valid categories', () => {
+    for (const c of VALID_CATEGORIES) expect(sanitiseCategory(c)).toBe(c)
+  })
+  it('maps the unknown "upi" slug (categoriser bug) to others', () => {
+    expect(sanitiseCategory('upi')).toBe('others')
+  })
+  it('maps any garbage to others', () => {
+    expect(sanitiseCategory('<script>')).toBe('others')
+    expect(sanitiseCategory('')).toBe('others')
+  })
+})
+
+describe('sanitiseMerchant', () => {
+  it('strips control chars but preserves internal spaces, caps length', () => {
+    const dirty = 'Amazon' + ESC + '[31m Pay' + 'x'.repeat(200)
+    const clean = sanitiseMerchant(dirty)
+    // eslint-disable-next-line no-control-regex
+    expect(clean).not.toMatch(/[\x00-\x1f\x7f]/) // no control chars survive
+    expect(clean.startsWith('Amazon')).toBe(true)
+    expect(clean).toContain(' ') // multi-word merchant names keep their space
+    expect(clean.length).toBeLessThanOrEqual(60)
+  })
+  it('falls back to a placeholder when empty after cleaning', () => {
+    expect(sanitiseMerchant('   ')).toBe('Unknown')
+  })
+})
+
+describe('sanitiseFinalTransactions', () => {
+  it('drops NaN, negative and zero amounts', () => {
+    const out = sanitiseFinalTransactions([
+      tx({ id: 'ok', amount: 100 }),
+      tx({ id: 'nan', amount: NaN }),
+      tx({ id: 'neg', amount: -5 }),
+      tx({ id: 'zero', amount: 0 }),
+    ])
+    expect(out.map((t) => t.id)).toEqual(['ok'])
+  })
+  it('normalises category and strips control chars from merchant on survivors', () => {
+    const dirtyMerchant = 'Ama' + ESC + 'zon'
+    const out = sanitiseFinalTransactions([tx({ category: 'upi' as never, merchant: dirtyMerchant })])
+    expect(out[0].category).toBe('others')
+    expect(out[0].merchant).toBe('Amazon')
+  })
+})

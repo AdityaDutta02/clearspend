@@ -10,7 +10,8 @@ import {
   type FormEvent,
 } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { parsePdf, PdfPasswordError } from '@/lib/pdf-parser'
+import { parsePdf, PdfPasswordError, PdfTooLargeError, MAX_PDF_BYTES } from '@/lib/pdf-parser'
+import { scoreStatementText } from '@/lib/is-statement'
 import type { RawTransaction, ParsedStatement } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 
@@ -119,6 +120,11 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
 
   const dispatchParsed = useCallback(
     (file: File, parsed: ParsedStatement): void => {
+      const heuristic = scoreStatementText(parsed.raw_text, parsed.transactions.length)
+      if (heuristic.confidence === 'low') {
+        onError('This doesn’t look like a bank statement. Please upload a PDF statement from your bank.')
+        return
+      }
       const detection: DetectionResult = {
         bank: parsed.bank,
         month: parsed.month,
@@ -128,13 +134,18 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
       }
       onParsed({ file, text: parsed.raw_text, transactions: parsed.transactions, detection })
     },
-    [onParsed],
+    [onParsed, onError],
   )
 
   const processFile = useCallback(
     async (file: File, pw?: string): Promise<void> => {
       if (!isPdfFile(file)) {
         onError('Only PDF files are supported. Please select a PDF bank statement.')
+        return
+      }
+
+      if (file.size > MAX_PDF_BYTES) {
+        onError('This PDF is too large (max 10 MB). Please upload a single bank statement.')
         return
       }
 
@@ -150,6 +161,9 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
           setPasswordError(pw !== undefined)
           setPassword('')
           setState('password-prompt')
+        } else if (err instanceof PdfTooLargeError) {
+          resetToIdle()
+          onError('This PDF is too large or has too many pages for a statement. Please upload a single monthly statement.')
         } else {
           resetToIdle()
           onError('Could not read this PDF. Please try a different file.')

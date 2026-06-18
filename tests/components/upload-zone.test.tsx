@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { UploadZone } from '@/components/upload/upload-zone'
 import type { ParsedStatement } from '@/types'
+import * as isStatement from '@/lib/is-statement'
+
+vi.mock('@/lib/is-statement', () => ({
+  scoreStatementText: vi.fn(() => ({ confidence: 'high', score: 80, signals: ['bank', 'vocab', 'txns'] })),
+}))
 
 vi.mock('@/lib/pdf-parser', () => ({
   parsePdf: vi.fn(),
@@ -11,6 +16,14 @@ vi.mock('@/lib/pdf-parser', () => ({
       this.name = 'PdfPasswordError'
     }
   },
+  PdfTooLargeError: class PdfTooLargeError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'PdfTooLargeError'
+    }
+  },
+  MAX_PDF_BYTES: 10 * 1024 * 1024,
+  MAX_PDF_PAGES: 50,
 }))
 
 async function importPdfParser(): Promise<typeof import('@/lib/pdf-parser')> {
@@ -154,6 +167,35 @@ describe('UploadZone', () => {
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(
         'This PDF is password protected. Please remove the password and try again.',
+      )
+    })
+    expect(onParsed).not.toHaveBeenCalled()
+  })
+
+  it('blocks low-confidence PDFs before dispatching', async () => {
+    vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'low', score: 0, signals: [] })
+
+    const { parsePdf } = await importPdfParser()
+    vi.mocked(parsePdf).mockResolvedValue({
+      ...MOCK_PARSED_STATEMENT,
+      raw_text: 'junk text with no financial signals',
+      transactions: [],
+    })
+
+    render(<UploadZone onParsed={onParsed} onError={onError} />)
+
+    const input = screen.getByTestId('upload-input')
+    const pdfFile = createPdfFile('random.pdf')
+
+    Object.defineProperty(input, 'files', {
+      value: [pdfFile],
+      configurable: true,
+    })
+    fireEvent.change(input)
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(
+        expect.stringMatching(/doesn.t look like a bank statement/),
       )
     })
     expect(onParsed).not.toHaveBeenCalled()

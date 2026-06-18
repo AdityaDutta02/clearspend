@@ -1,0 +1,36 @@
+import type { Transaction, CategorySlug } from '@/types'
+
+export const VALID_CATEGORIES: readonly CategorySlug[] = [
+  'food', 'groceries', 'transport', 'shopping', 'emi_loans',
+  'utilities', 'entertainment', 'health', 'travel', 'others',
+]
+
+const CATEGORY_SET = new Set<string>(VALID_CATEGORIES)
+const MAX_MERCHANT = 60
+
+// C0 control chars (U+0000–U+001F) and DEL (U+007F). Written as \x escapes so
+// the source stays pure ASCII — never embed literal control bytes here.
+// eslint-disable-next-line no-control-regex
+const CONTROL_CHARS = /[\x00-\x1f\x7f]/g
+
+export function sanitiseCategory(value: string): CategorySlug {
+  return CATEGORY_SET.has(value) ? (value as CategorySlug) : 'others'
+}
+
+export function sanitiseMerchant(value: string): string {
+  const cleaned = value.replace(CONTROL_CHARS, '').trim().slice(0, MAX_MERCHANT)
+  return cleaned.length > 0 ? cleaned : 'Unknown'
+}
+
+export function sanitiseFinalTransactions(txs: Transaction[]): Transaction[] {
+  return txs
+    .filter((tx) => Number.isFinite(tx.amount) && tx.amount > 0)
+    .map((tx) => ({
+      ...tx,
+      amount: Math.round(tx.amount * 100) / 100,
+      merchant: sanitiseMerchant(tx.merchant),
+      category: sanitiseCategory(tx.category),
+      upi_merchant: tx.upi_merchant ? sanitiseMerchant(tx.upi_merchant) : null,
+      raw_description: (tx.raw_description ?? '').replace(CONTROL_CHARS, '').slice(0, 300),
+    }))
+}
