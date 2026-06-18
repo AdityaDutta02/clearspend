@@ -1,7 +1,8 @@
 providers = []
 
 [build]
-cmd = "npm ci && npm run build"
+# Stage static chunks AND public/ into standalone (self-hosted pdf.js worker lives in public/).
+cmd = "npm ci && npm run build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public"
 
 [start]
 cmd = "node .next/standalone/server.js"

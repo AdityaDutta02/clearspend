@@ -3,7 +3,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN node_modules/.bin/next build && cp -r .next/static .next/standalone/.next/static
+# Full client+server build, then stage static chunks AND public/ (self-hosted
+# pdf.js worker lives in public/ — Next standalone does not include it by default).
+RUN node_modules/.bin/next build \
+ && cp -r .next/static .next/standalone/.next/static \
+ && cp -r public .next/standalone/public
 
 FROM node:20-alpine AS runner
 WORKDIR /app
