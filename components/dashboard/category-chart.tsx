@@ -43,6 +43,12 @@ const CATEGORY_COLORS: Record<CategorySlug, string> = {
   others: '#94a3b8',
 }
 
+const FALLBACK_COLOR = '#94a3b8'
+
+function colorFor(slug: CategorySlug): string {
+  return CATEGORY_COLORS[slug] ?? FALLBACK_COLOR
+}
+
 interface CategoryTotal {
   slug: CategorySlug
   name: string
@@ -69,7 +75,7 @@ function aggregateCategories(analyses: Analysis[]): CategoryTotal[] {
 
   return rows.map(({ slug, total }) => ({
     slug,
-    name: CATEGORY_DISPLAY_NAMES[slug],
+    name: CATEGORY_DISPLAY_NAMES[slug] ?? slug,
     total,
     share: grand > 0 ? Math.round((total / grand) * 100) : 0,
   }))
@@ -108,7 +114,7 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>): JSX.E
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: CATEGORY_COLORS[data.slug],
+            background: colorFor(data.slug),
             flexShrink: 0,
           }}
         />
@@ -231,7 +237,7 @@ export function CategoryChart({ analyses, isLoading }: CategoryChartProps): JSX.
                 {categories.map((entry) => (
                   <Cell
                     key={entry.slug}
-                    fill={CATEGORY_COLORS[entry.slug]}
+                    fill={colorFor(entry.slug)}
                     data-testid={`category-${entry.slug}`}
                   />
                 ))}
