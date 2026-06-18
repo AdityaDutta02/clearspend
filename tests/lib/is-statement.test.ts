@@ -16,6 +16,7 @@ describe('scoreStatementText', () => {
   it('rates obvious junk low with no signals', () => {
     const r = scoreStatementText('Lorem ipsum dolor sit amet, my résumé and cover letter.', 0)
     expect(r.confidence).toBe('low')
+    expect(r.signals).toHaveLength(0)
   })
 
   it('rates an invoice-like doc medium (dates+amounts but no bank vocab)', () => {
