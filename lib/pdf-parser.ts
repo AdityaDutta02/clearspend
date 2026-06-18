@@ -5,6 +5,16 @@ import type { ParsedStatement, RawTransaction } from '@/types'
 import { stripPii } from '@/lib/pii-stripper'
 import { detectBankAndMonth } from '@/lib/bank-detect'
 
+export const MAX_PDF_BYTES = 10 * 1024 * 1024 // 10 MB
+export const MAX_PDF_PAGES = 50
+
+export class PdfTooLargeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'PdfTooLargeError'
+  }
+}
+
 async function getPdfJs() {
   const pdfjs = await import('pdfjs-dist')
   // Self-hosted worker (public/pdf.worker.min.mjs) — no third-party CDN.
@@ -31,6 +41,10 @@ export async function parsePdf(
   const pdfjs = await getPdfJs()
   const arrayBuffer = await file.arrayBuffer()
 
+  if (arrayBuffer.byteLength > MAX_PDF_BYTES) {
+    throw new PdfTooLargeError(`PDF exceeds ${MAX_PDF_BYTES} bytes`)
+  }
+
   let doc: PDFDocumentProxy
   try {
     doc = await pdfjs.getDocument({
@@ -47,6 +61,10 @@ export async function parsePdf(
       throw new PdfPasswordError()
     }
     throw err
+  }
+
+  if (doc.numPages > MAX_PDF_PAGES) {
+    throw new PdfTooLargeError(`PDF has ${doc.numPages} pages (max ${MAX_PDF_PAGES})`)
   }
 
   const pages: string[] = []

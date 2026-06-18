@@ -11,6 +11,14 @@ vi.mock('@/lib/pdf-parser', () => ({
       this.name = 'PdfPasswordError'
     }
   },
+  PdfTooLargeError: class PdfTooLargeError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = 'PdfTooLargeError'
+    }
+  },
+  MAX_PDF_BYTES: 10 * 1024 * 1024,
+  MAX_PDF_PAGES: 50,
 }))
 
 async function importPdfParser(): Promise<typeof import('@/lib/pdf-parser')> {

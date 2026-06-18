@@ -10,7 +10,7 @@ import {
   type FormEvent,
 } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { parsePdf, PdfPasswordError } from '@/lib/pdf-parser'
+import { parsePdf, PdfPasswordError, PdfTooLargeError, MAX_PDF_BYTES } from '@/lib/pdf-parser'
 import type { RawTransaction, ParsedStatement } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 
@@ -138,6 +138,11 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
         return
       }
 
+      if (file.size > MAX_PDF_BYTES) {
+        onError('This PDF is too large (max 10 MB). Please upload a single bank statement.')
+        return
+      }
+
       setState('loading')
 
       try {
@@ -150,6 +155,9 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
           setPasswordError(pw !== undefined)
           setPassword('')
           setState('password-prompt')
+        } else if (err instanceof PdfTooLargeError) {
+          resetToIdle()
+          onError('This PDF is too large or has too many pages for a statement. Please upload a single monthly statement.')
         } else {
           resetToIdle()
           onError('Could not read this PDF. Please try a different file.')
