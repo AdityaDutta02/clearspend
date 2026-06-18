@@ -48,7 +48,7 @@ Extract all transactions. Return ONLY a JSON array of objects:
 - date: YYYY-MM-DD
 - amount: number (positive, no currency symbol)
 - type: "debit" or "credit"
-- description: string (max 200 chars)
+- description: string (max 300 chars)
 - upi_ref: string or null
 Return ONLY the JSON array, no explanation.`
 

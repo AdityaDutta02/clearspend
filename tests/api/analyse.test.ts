@@ -94,6 +94,24 @@ describe('POST /api/analyse', () => {
     expect(classify.classifyStatement).not.toHaveBeenCalled()
   })
 
+  it('rejects fabricated transactions with no raw_text when gate scores low (no credit drain)', async () => {
+    vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'low', score: 0, signals: [] })
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest('http://localhost/api/analyse', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_type: 'debit',
+        transactions: [{ date: '2024-01-01', amount: 100, type: 'debit', description: 'x', upi_ref: null }],
+        // no raw_text
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toBe('NOT_A_STATEMENT')
+    expect(categorise.categoriseTransactions).not.toHaveBeenCalled()
+  })
+
   it('gray-zone calls the AI classifier and rejects when is_statement=false', async () => {
     vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'medium', score: 30, signals: ['amount'] })
     vi.mocked(classify.classifyStatement).mockResolvedValue({ is_statement: false, confidence: 0.1, bank_guess: null })

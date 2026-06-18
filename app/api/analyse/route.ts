@@ -53,18 +53,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   console.log(`[analyse:${reqId}] parsed — txs=${rawTxs.length} hasRawText=${!!rawText} month=${month} bank=${bank} acct=${account_type}`)
 
   // ── Statement gate: reject non-statements before spending any credit ──
-  if (rawText) {
-    const heuristic = scoreStatementText(rawText, rawTxs.length)
-    let isStatementResult = heuristic.confidence === 'high'
-    if (heuristic.confidence === 'medium') {
-      const verdict = await classifyStatement(rawText, token)
-      isStatementResult = verdict.is_statement
-      console.log(`[analyse:${reqId}] classifier verdict is_statement=${verdict.is_statement} conf=${verdict.confidence}`)
-    }
-    if (!isStatementResult) {
-      console.warn(`[analyse:${reqId}] REJECT NOT_A_STATEMENT — heuristic=${heuristic.confidence} score=${heuristic.score} signals=[${heuristic.signals.join(',')}]`)
-      return NextResponse.json({ error: 'NOT_A_STATEMENT' }, { status: 422 })
-    }
+  // Falls back to transaction descriptions when raw_text is absent so callers
+  // cannot bypass the gate by omitting raw_text and sending fabricated transactions.
+  const gateText = rawText && rawText.trim().length > 0
+    ? rawText
+    : rawTxs.map((t) => t.description ?? '').join(' ')
+  const heuristic = scoreStatementText(gateText, rawTxs.length)
+  let isStatementResult = heuristic.confidence === 'high'
+  if (heuristic.confidence === 'medium') {
+    const verdict = await classifyStatement(gateText, token)
+    isStatementResult = verdict.is_statement
+    console.log(`[analyse:${reqId}] classifier verdict is_statement=${verdict.is_statement} conf=${verdict.confidence}`)
+  }
+  if (!isStatementResult) {
+    console.warn(`[analyse:${reqId}] REJECT NOT_A_STATEMENT — heuristic=${heuristic.confidence} score=${heuristic.score} signals=[${heuristic.signals.join(',')}]`)
+    return NextResponse.json({ error: 'NOT_A_STATEMENT' }, { status: 422 })
   }
 
   // AI fallback: extract transactions from raw text if regex got none
