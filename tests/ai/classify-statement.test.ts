@@ -36,4 +36,10 @@ describe('classifyStatement', () => {
     expect(userMsg.content).toContain('PROMPT INJECTION HERE')
     expect(userMsg.content).toContain('<<<UNTRUSTED_DOCUMENT')
   })
+
+  it('fails closed when the gateway call rejects', async () => {
+    vi.mocked(terminalAi.callModel).mockRejectedValue(new Error('gateway timeout'))
+    const r = await classifyStatement('anything', 'token')
+    expect(r).toEqual({ is_statement: false, confidence: 0, bank_guess: null })
+  })
 })

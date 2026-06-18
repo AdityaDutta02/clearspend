@@ -36,6 +36,7 @@ export async function classifyStatement(
         { role: 'system', content: SYSTEM_PROMPT },
         {
           role: 'user',
+          // truncate to ~4000 chars to stay within the cheap classifier's token budget
           content: `<<<UNTRUSTED_DOCUMENT>>>\n${text.slice(0, 4000)}\n<<<END_UNTRUSTED_DOCUMENT>>>`,
         },
       ],
