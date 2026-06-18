@@ -7,8 +7,9 @@ import { detectBankAndMonth } from '@/lib/bank-detect'
 
 async function getPdfJs() {
   const pdfjs = await import('pdfjs-dist')
-  pdfjs.GlobalWorkerOptions.workerSrc =
-    `//unpkg.com/pdfjs-dist@${String(pdfjs.version)}/build/pdf.worker.min.mjs`
+  // Self-hosted worker (public/pdf.worker.min.mjs) — no third-party CDN.
+  // Version is guarded by scripts/check-pdf-worker-version.mjs + its test.
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
   return pdfjs
 }
 
