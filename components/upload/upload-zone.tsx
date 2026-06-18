@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { parsePdf, PdfPasswordError, PdfTooLargeError, MAX_PDF_BYTES } from '@/lib/pdf-parser'
+import { scoreStatementText } from '@/lib/is-statement'
 import type { RawTransaction, ParsedStatement } from '@/types'
 import type { DetectionResult } from '@/lib/bank-detect'
 
@@ -119,6 +120,11 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
 
   const dispatchParsed = useCallback(
     (file: File, parsed: ParsedStatement): void => {
+      const heuristic = scoreStatementText(parsed.raw_text, parsed.transactions.length)
+      if (heuristic.confidence === 'low') {
+        onError('This doesn’t look like a bank statement. Please upload a PDF statement from your bank.')
+        return
+      }
       const detection: DetectionResult = {
         bank: parsed.bank,
         month: parsed.month,
@@ -128,7 +134,7 @@ export function UploadZone({ onParsed, onError, disabled = false }: UploadZonePr
       }
       onParsed({ file, text: parsed.raw_text, transactions: parsed.transactions, detection })
     },
-    [onParsed],
+    [onParsed, onError],
   )
 
   const processFile = useCallback(
