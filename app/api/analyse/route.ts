@@ -6,6 +6,9 @@ import { resolveUpiMerchants } from '@/lib/ai/upi-resolve'
 import { generateInsights } from '@/lib/ai/insights'
 import { extractTransactionsFromText } from '@/lib/ai/extract-transactions'
 import { detectBankAndMonth } from '@/lib/bank-detect'
+import { scoreStatementText } from '@/lib/is-statement'
+import { classifyStatement } from '@/lib/ai/classify-statement'
+import { sanitiseFinalTransactions } from '@/lib/sanitise-transactions'
 import type { Statement, Transaction, Analysis, CategorySlug } from '@/types'
 
 const RawTransactionSchema = z.object({
@@ -49,12 +52,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const lastFour = parsed.data.last_four ?? null
   console.log(`[analyse:${reqId}] parsed — txs=${rawTxs.length} hasRawText=${!!rawText} month=${month} bank=${bank} acct=${account_type}`)
 
+  // ── Statement gate: reject non-statements before spending any credit ──
+  if (rawText) {
+    const heuristic = scoreStatementText(rawText, rawTxs.length)
+    let isStatementResult = heuristic.confidence === 'high'
+    if (heuristic.confidence === 'medium') {
+      const verdict = await classifyStatement(rawText, token)
+      isStatementResult = verdict.is_statement
+      console.log(`[analyse:${reqId}] classifier verdict is_statement=${verdict.is_statement} conf=${verdict.confidence}`)
+    }
+    if (!isStatementResult) {
+      console.warn(`[analyse:${reqId}] REJECT NOT_A_STATEMENT — heuristic=${heuristic.confidence} score=${heuristic.score} signals=[${heuristic.signals.join(',')}]`)
+      return NextResponse.json({ error: 'NOT_A_STATEMENT' }, { status: 422 })
+    }
+  }
+
   // AI fallback: extract transactions from raw text if regex got none
   if (rawTxs.length === 0 && rawText) {
     console.log(`[analyse:${reqId}] AI fallback extraction start`)
     try {
-      rawTxs = await extractTransactionsFromText(rawText, token)
-      console.log(`[analyse:${reqId}] AI fallback extracted ${rawTxs.length} txs`)
+      rawTxs = (await extractTransactionsFromText(rawText, token)).slice(0, 1000)
+      console.log(`[analyse:${reqId}] AI fallback extracted ${rawTxs.length} txs (capped 1000)`)
     } catch (e) {
       console.error(`[analyse:${reqId}] AI fallback failed:`, e instanceof Error ? e.message : String(e))
     }
@@ -128,7 +146,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     console.log(`[analyse:${reqId}] AI step 2 upi-resolve OK`)
     const upiMerchantMap = new Map(withUpi.map((tx) => [tx.id, tx.upi_merchant]))
 
-    const finalTxs: Transaction[] = categorised.map((tx) => ({
+    const rawMappedTxs: Transaction[] = categorised.map((tx) => ({
       id: tx.id,
       statement_id: statementId,
       date: tx.date,
@@ -140,6 +158,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       upi_merchant: upiMerchantMap.get(tx.id) ?? null,
       raw_description: tx.description,
     }))
+    const finalTxs: Transaction[] = sanitiseFinalTransactions(rawMappedTxs)
+    if (finalTxs.length === 0) {
+      throw new Error('No valid transactions after sanitisation')
+    }
 
     console.log(`[analyse:${reqId}] DB insert ${finalTxs.length} transactions`)
     for (const tx of finalTxs) {

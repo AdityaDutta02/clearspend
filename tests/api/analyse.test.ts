@@ -4,11 +4,15 @@ import * as db from '@/lib/db'
 import * as categorise from '@/lib/ai/categorise'
 import * as upiResolve from '@/lib/ai/upi-resolve'
 import * as insights from '@/lib/ai/insights'
+import * as isStatement from '@/lib/is-statement'
+import * as classify from '@/lib/ai/classify-statement'
 
 vi.mock('@/lib/db')
 vi.mock('@/lib/ai/categorise')
 vi.mock('@/lib/ai/upi-resolve')
 vi.mock('@/lib/ai/insights')
+vi.mock('@/lib/is-statement')
+vi.mock('@/lib/ai/classify-statement')
 
 const mockStatement = {
   id: 'stmt-1', month: '2024-01', bank: 'hdfc', account_type: 'debit',
@@ -22,7 +26,10 @@ const mockAnalysis = {
 }
 
 describe('POST /api/analyse', () => {
-  beforeEach(() => { vi.resetAllMocks() })
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'high', score: 80, signals: ['bank'] })
+  })
 
   it('returns 401 when no token', async () => {
     const req = new Request('http://localhost/api/analyse', { method: 'POST', body: '{}' })
@@ -69,5 +76,39 @@ describe('POST /api/analyse', () => {
     expect(res.status).toBe(200)
     expect(data.statement).toBeDefined()
     expect(data.analysis).toBeDefined()
+  })
+
+  it('rejects low-confidence junk with 422 NOT_A_STATEMENT and never calls AI', async () => {
+    vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'low', score: 5, signals: [] })
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest('http://localhost/api/analyse', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_type: 'debit', transactions: [], raw_text: 'Lorem ipsum résumé',
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toBe('NOT_A_STATEMENT')
+    expect(classify.classifyStatement).not.toHaveBeenCalled()
+  })
+
+  it('gray-zone calls the AI classifier and rejects when is_statement=false', async () => {
+    vi.mocked(isStatement.scoreStatementText).mockReturnValue({ confidence: 'medium', score: 30, signals: ['amount'] })
+    vi.mocked(classify.classifyStatement).mockResolvedValue({ is_statement: false, confidence: 0.1, bank_guess: null })
+    const { NextRequest } = await import('next/server')
+    const req = new NextRequest('http://localhost/api/analyse', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        account_type: 'debit',
+        transactions: [{ date: '2024-01-01', amount: 100, type: 'debit', description: 'Invoice', upi_ref: null }],
+        raw_text: 'Invoice 2024 Total 1,234.00',
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(422)
+    expect((await res.json()).error).toBe('NOT_A_STATEMENT')
   })
 })
