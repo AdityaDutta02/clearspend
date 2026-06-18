@@ -79,7 +79,7 @@ export function HomeClient(): JSX.Element {
 
       if (!res.ok || body.error) {
         if (body.error === 'NOT_A_STATEMENT') {
-          setAnalyseError('This file doesn't look like a bank statement, so it wasn't analysed. No credits were used.')
+          setAnalyseError("This file doesn't look like a bank statement, so it wasn't analysed. No credits were used.")
         } else if (body.error === 'INSUFFICIENT_CREDITS') {
           setAnalyseError('You need at least 5 credits to analyse a statement.')
         } else {
