@@ -65,7 +65,12 @@ export async function extractTransactionsFromText(
     embedToken,
   )
 
-  const parsedUnknown: unknown = JSON.parse(extractJsonArray(content))
+  let parsedUnknown: unknown
+  try {
+    parsedUnknown = JSON.parse(extractJsonArray(content))
+  } catch {
+    return []
+  }
   const arrayParse = z.array(z.unknown()).safeParse(parsedUnknown)
   if (!arrayParse.success) return []
 
